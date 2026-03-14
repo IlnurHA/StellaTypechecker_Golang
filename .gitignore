@@ -1,0 +1,57 @@
+# --- OS generated files ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# --- IDE / Editor ---
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# --- Go specific ---
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Dependency directories (if using vendor/)
+vendor/
+
+# Go workspace files (if any)
+go.work
+go.work.sum
+
+# Coverage files
+*.cov
+*.cover.out
+*.coverprofile
+coverage.html
+coverage.txt
+coverage.out
+
+# Generated parser files (the Go files created by antlr4)
+# Adjust the paths if your generated files are elsewhere
+parser/*.go
+# If you have multiple generated files, you might want to ignore all .go in parser/
+# but if you have hand-written .go there, be more specific.
+
+# ANTLR intermediate files (usually not needed in version control)
+*.tokens
+*.interp
+
+# --- Temporary / log files ---
+*.log
+tmp/
