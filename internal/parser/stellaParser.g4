@@ -127,7 +127,6 @@ pattern:
     )? '}'                                                      # PatternRecord
     | '[' (patterns += pattern (',' patterns += pattern)*)? ']' # PatternList
     | 'cons' '(' head = pattern ',' tail = pattern ')'          # PatternCons
-    | '(' p1 = pattern ',' p2 = pattern ')'                    # patternCons
     | 'false'                                                   # PatternFalse
     | 'true'                                                    # PatternTrue
     | 'unit'                                                    # PatternUnit
