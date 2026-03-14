@@ -44,7 +44,7 @@ coverage.out
 
 # Generated parser files (the Go files created by antlr4)
 # Adjust the paths if your generated files are elsewhere
-parser/*.go
+parser/stella*.go
 # If you have multiple generated files, you might want to ignore all .go in parser/
 # but if you have hand-written .go there, be more specific.
 
