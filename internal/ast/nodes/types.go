@@ -3,13 +3,13 @@ package ast
 import "github.com/neocotic/go-optional"
 
 type RecordFieldType struct {
-	label StellaIdent
-	type_ StellaType
+	Label StellaIdent
+	Type_ StellaType
 }
 
 type VariantFieldType struct {
-	label StellaIdent
-	type_ optional.Optional[StellaType]
+	Label StellaIdent
+	Type_ optional.Optional[StellaType]
 }
 
 type StellaType interface{ isType() }
@@ -18,35 +18,35 @@ type TypeBool struct{}
 type TypeNat struct{}
 
 type TypeRef struct {
-	type_ StellaType
+	Type_ StellaType
 }
 type TypeSum struct {
-	left  StellaType
-	right StellaType
+	Left  StellaType
+	Right StellaType
 }
 type TypeFun struct {
-	paramTypes []StellaType
-	returnType StellaType
+	ParamTypes []StellaType
+	ReturnType StellaType
 }
 type TypeForAll struct {
-	types []StellaIdent
-	type_ StellaType
+	Types []StellaIdent
+	Type_ StellaType
 }
 type TypeRec struct {
-	var_  StellaIdent
-	type_ StellaType
+	Var_  StellaIdent
+	Type_ StellaType
 }
 type TypeTuple struct {
-	types []StellaType
+	Types []StellaType
 }
 type TypeRecord struct {
-	fieldTypes []RecordFieldType
+	FieldTypes []RecordFieldType
 }
 type TypeVariant struct {
-	fieldTypes []VariantFieldType
+	FieldTypes []VariantFieldType
 }
 type TypeList struct {
-	type_ StellaType
+	Type_ StellaType
 }
 
 type TypeUnit struct{}
@@ -54,10 +54,10 @@ type TypeTop struct{}
 type TypeBot struct{}
 type TypeAuto struct{}
 type TypeVar struct {
-	name StellaIdent
+	Name StellaIdent
 }
 type TypeParens struct {
-	type_ StellaIdent
+	Type_ StellaType
 }
 
 func (x *RecordFieldType) isNode() {

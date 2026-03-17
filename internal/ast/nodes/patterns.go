@@ -5,62 +5,62 @@ import "github.com/neocotic/go-optional"
 type Pattern interface{ isPattern() }
 
 type PatternVariant struct {
-	label   StellaIdent
-	pattern optional.Optional[Pattern]
+	Label   StellaIdent
+	Pattern optional.Optional[Pattern]
 }
 
 type PatternInl struct {
-	pattern Pattern
+	Pattern Pattern
 }
 
 type PatternInr struct {
-	pattern Pattern
+	Pattern Pattern
 }
 
 type PatternTuple struct {
-	patterns []Pattern
+	Patterns []Pattern
 }
 
 type PatternRecord struct {
-	patterns []LabelledPattern
+	Patterns []LabelledPattern
 }
 
 type PatternList struct {
-	patterns []Pattern
+	Patterns []Pattern
 }
 
 type PatternCons struct {
-	head Pattern
-	tail Pattern
+	Head Pattern
+	Tail Pattern
 }
 
 type PatternFalse struct{}
 type PatternTrue struct{}
 type PatternUnit struct{}
 type PatternInt struct {
-	n int
+	N int
 }
 type PatternSucc struct {
-	pattern Pattern
+	Pattern Pattern
 }
 type PatternVar struct {
-	name StellaIdent
+	Name StellaIdent
 }
 type PatternAsc struct {
-	pattern Pattern
-	type_   StellaType
+	Pattern Pattern
+	Type_   StellaType
 }
 type PatternCastAs struct {
-	pattern Pattern
-	type_   StellaType
+	Pattern Pattern
+	Type_   StellaType
 }
 type ParenthesisedPattern struct {
-	pattern Pattern
+	Pattern Pattern
 }
 
 type LabelledPattern struct {
-	label   StellaIdent
-	pattern Pattern
+	Label   StellaIdent
+	Pattern Pattern
 }
 
 func (x *PatternVariant) isNode() {

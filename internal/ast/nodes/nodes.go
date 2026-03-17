@@ -2,16 +2,16 @@ package ast
 
 type Node interface{ isNode() }
 
-type StellaIdent struct{ name string }
-type Extension struct{ name string }
-type MemoryAddress struct{ addr string }
+type StellaIdent struct{ Name string }
+type Extension struct{ Name string }
+type MemoryAddress struct{ Addr string }
 
-type LanguageDeclaration struct{ name string }
+type LanguageDeclaration struct{ Name string }
 
 type AProgram struct {
-	languageDecl LanguageDeclaration
-	extensions   []Extension
-	declarations []Declaration
+	LanguageDecl LanguageDeclaration
+	Extensions   []Extension
+	Declarations []Declaration
 }
 
 func (x *StellaIdent) isNode() {

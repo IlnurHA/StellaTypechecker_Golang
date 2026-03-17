@@ -3,261 +3,266 @@ package ast
 import "github.com/neocotic/go-optional"
 
 type PatternBinding struct {
-	pattern Pattern
-	rhs     Expr
+	Pattern Pattern
+	Rhs     Expr
 }
 
 type Binding struct {
-	name StellaIdent
-	rhs  Expr
+	Name StellaIdent
+	Rhs  Expr
 }
 
 type MatchCase struct {
-	pattern Pattern
-	expr    Expr
+	Pattern Pattern
+	Expr_   Expr
 }
 
 type Expr interface{ isExpr() }
 
 type DotRecord struct {
-	subexpr Expr
-	label   StellaIdent
+	Subexpr Expr
+	Label   StellaIdent
 }
 
 type DotTuple struct {
-	subexpr Expr
-	index   int
+	Subexpr Expr
+	Index   int
 }
 
 type ConstBool struct {
-	value bool
+	Value bool
 }
 
 type ConstUnit struct{}
 
 type ConstInt struct {
-	value int
+	Value int
 }
 
 type ConstMemory struct {
-	memory MemoryAddress
+	Memory MemoryAddress
 }
 
 type Var struct {
-	name StellaIdent
+	Name StellaIdent
 }
 
 type Panic struct{}
-type Throw struct{ expr Expr }
+type Throw struct{ Expr_ Expr }
 type TryCatch struct {
-	tryExpr      Expr
-	pattern      Pattern
-	fallbackExpr Expr
+	TryExpr      Expr
+	Pattern      Pattern
+	FallbackExpr Expr
 }
 type TryCastAs struct {
-	tryExpr      Expr
-	type_        StellaType
-	pattern      Pattern
-	fallbackExpr Expr
+	TryExpr      Expr
+	Type_        StellaType
+	Pattern      Pattern
+	Expr_        Expr
+	FallbackExpr Expr
 }
 type TryWith struct {
-	tryExpr      Expr
-	fallbackExpr Expr
+	TryExpr      Expr
+	FallbackExpr Expr
 }
 
-type Inl struct{ expr Expr }
-type Inr struct{ expr Expr }
+type Inl struct{ Expr_ Expr }
+type Inr struct{ Expr_ Expr }
 
 type ConsList struct {
-	head Expr
-	tail Expr
+	Head Expr
+	Tail Expr
 }
 type Head struct {
-	list Expr
+	List Expr
 }
 type IsEmpty struct {
-	list Expr
+	List Expr
 }
 type Tail struct {
-	list Expr
+	List Expr
 }
 
 type Succ struct {
-	n Expr
+	N Expr
 }
 
 type LogicNot struct {
-	expr Expr
+	Expr_ Expr
 }
 
 type Pred struct {
-	n Expr
+	N Expr
 }
 
 type IsZero struct {
-	n Expr
+	N Expr
 }
 
 type Fix struct {
-	expr Expr
+	Expr_ Expr
 }
 
 type NatRec struct {
-	n       Expr
-	initial Expr
-	step    Expr
+	N       Expr
+	Initial Expr
+	Step    Expr
 }
 
 type Fold struct {
-	type_ StellaType
-	expr  Expr
+	Type_ StellaType
+	Expr_ Expr
 }
 
 type Unfold struct {
-	type_ StellaType
-	expr  Expr
+	Type_ StellaType
+	Expr_ Expr
 }
 
 type Application struct {
-	expr Expr
-	args []Expr
+	Function Expr
+	Args     []Expr
 }
 type TypeApplication struct {
-	expr  Expr
-	types []StellaType
+	Function Expr
+	Types    []StellaType
 }
 
 type Multiply struct {
-	left  Expr
-	right Expr
+	Left  Expr
+	Right Expr
 }
 
 type Divide struct {
-	left  Expr
-	right Expr
+	Left  Expr
+	Right Expr
 }
 
 type LogicAnd struct {
-	left  Expr
-	right Expr
+	Left  Expr
+	Right Expr
 }
 
 type Ref struct {
-	expr Expr
+	Expr_ Expr
+}
+
+type Deref struct {
+	Expr_ Expr
 }
 
 type Add struct {
-	left  Expr
-	right Expr
+	Left  Expr
+	Right Expr
 }
 type Subtract struct {
-	left  Expr
-	right Expr
+	Left  Expr
+	Right Expr
 }
 type LogicOr struct {
-	left  Expr
-	right Expr
+	Left  Expr
+	Right Expr
 }
 
 type TypeAsc struct {
-	expr  Expr
-	type_ StellaType
+	Expr_ Expr
+	Type_ StellaType
 }
 
 type TypeCast struct {
-	expr  Expr
-	type_ StellaType
+	Expr_ Expr
+	Type_ StellaType
 }
 
 type Abstraction struct {
-	params     []ParameterDeclaration
-	returnExpr Expr
+	Params     []ParameterDeclaration
+	ReturnExpr Expr
 }
 
 type Tuple struct {
-	exprs []Expr
+	Exprs []Expr
 }
 
 type Record struct {
-	bindings []Binding
+	Bindings []Binding
 }
 
 type Variant struct {
-	label StellaIdent
-	rhs   optional.Optional[Expr]
+	Label StellaIdent
+	Rhs   optional.Optional[Expr]
 }
 
 type Match struct {
-	expr  Expr
-	cases []MatchCase
+	Expr_ Expr
+	Cases []MatchCase
 }
 
 type List struct {
-	exprs []Expr
+	Exprs []Expr
 }
 
 type LessThan struct {
-	left  Expr
-	right Expr
+	Left  Expr
+	Right Expr
 }
 type LessThanOrEqual struct {
-	left  Expr
-	right Expr
+	Left  Expr
+	Right Expr
 }
 type GreaterThan struct {
-	left  Expr
-	right Expr
+	Left  Expr
+	Right Expr
 }
 type GreaterThanOrEqual struct {
-	left  Expr
-	right Expr
+	Left  Expr
+	Right Expr
 }
 type Equal struct {
-	left  Expr
-	right Expr
+	Left  Expr
+	Right Expr
 }
 type NotEqual struct {
-	left  Expr
-	right Expr
+	Left  Expr
+	Right Expr
 }
 
 type Assign struct {
-	lhs Expr
-	rhs Expr
+	Lhs Expr
+	Rhs Expr
 }
 
 type If struct {
-	condition Expr
-	thenExpr  Expr
-	elseExpr  Expr
+	Condition Expr
+	ThenExpr  Expr
+	ElseExpr  Expr
 }
 
 type Sequence struct {
-	expr1 Expr
-	expr2 Expr
+	Expr1 Expr
+	Expr2 Expr
 }
 
 type Let struct {
-	patternBindings []PatternBinding
-	body            Expr
+	PatternBindings []PatternBinding
+	Body            Expr
 }
 
 type LetRec struct {
-	patternBindings []PatternBinding
-	body            Expr
+	PatternBindings []PatternBinding
+	Body            Expr
 }
 
 type TypeAbstraction struct {
-	generics []StellaType
-	expr     Expr
+	Generics []StellaIdent
+	Expr_    Expr
 }
 
 type ParenthesisedExpr struct {
-	expr Expr
+	Expr_ Expr
 }
 
 type TerminatingSemicolon struct {
-	expr Expr
+	Expr_ Expr
 }
 
 func (x *PatternBinding) isNode() {

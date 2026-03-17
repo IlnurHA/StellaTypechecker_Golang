@@ -3,49 +3,48 @@ package ast
 import "github.com/neocotic/go-optional"
 
 type ParameterDeclaration struct {
-	name          StellaIdent
-	parameterType StellaType
+	Name          StellaIdent
+	ParameterType StellaType
 }
 
 type Annotation struct {
-	name string
+	Name string
 }
 
 type Declaration interface{ isDecl() }
 
 type FunctionDeclaration struct {
-	name         string
-	params       []ParameterDeclaration
-	returnType   optional.Optional[StellaType]
-	throwTypes   optional.Optional[[]StellaType]
-	declarations []Declaration
-	expr         Expr
+	Name         StellaIdent
+	Params       []ParameterDeclaration
+	ReturnType   optional.Optional[StellaType]
+	ThrowTypes   []StellaType
+	Declarations []Declaration
+	Expr         Expr
 }
 
 type GenericFunctionDeclaration struct {
-	name         string
-	params       []ParameterDeclaration
-	returnType   optional.Optional[StellaType]
-	throwTypes   optional.Optional[[]StellaType]
-	declarations []Declaration
-	expr         Expr
+	Name         StellaIdent
+	Params       []ParameterDeclaration
+	ReturnType   optional.Optional[StellaType]
+	ThrowTypes   []StellaType
+	Declarations []Declaration
+	Expr         Expr
 
-	annotations []Annotation
-	generics    []StellaIdent
+	Generics []StellaIdent
 }
 
 type TypeAliasDeclaration struct {
-	name  string
-	atype StellaType
+	Name  StellaIdent
+	Atype StellaType
 }
 
 type ExceptionTypeDeclaration struct {
-	exceptionType StellaType
+	ExceptionType StellaType
 }
 
 type ExceptionVariantDeclaration struct {
-	name        string
-	variantType StellaType
+	Name        StellaIdent
+	VariantType StellaType
 }
 
 func (x *ParameterDeclaration) isNode() {
