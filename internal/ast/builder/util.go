@@ -63,7 +63,7 @@ func parseListOfStellaIdent(identsCtx []antlr.Token) []nodes.StellaIdent {
 }
 
 func parseStellaIdent(identCtx antlr.Token) nodes.StellaIdent {
-	return nodes.StellaIdent{Name: identCtx.GetText()}
+	return nodes.StellaIdent{Name: identCtx.GetText(), Repr: identCtx.GetText()}
 }
 
 func parseDeclarations(declarationsCtx []parser.IDeclContext, v *ASTBuilder) []nodes.Declaration {
@@ -87,7 +87,7 @@ func parseListOfPattern(patternsCtx []parser.IPatternContext, v *ASTBuilder) []n
 func parseLabelledPattern(patternCtx parser.ILabelledPatternContext, v *ASTBuilder) nodes.LabelledPattern {
 	label := parseStellaIdent(patternCtx.GetLabel())
 	pattern := v.Visit(patternCtx.GetPattern_()).(nodes.Pattern)
-	return nodes.LabelledPattern{Label: label, Pattern: pattern}
+	return nodes.LabelledPattern{Label: label, Pattern: pattern, Repr: patternCtx.GetText()}
 }
 
 func parseListOfLabelledPattern(patternsCtx []parser.ILabelledPatternContext, v *ASTBuilder) []nodes.LabelledPattern {
@@ -98,7 +98,7 @@ func parseRecordFieldType(typeCtx parser.IRecordFieldTypeContext, v *ASTBuilder)
 	label := parseStellaIdent(typeCtx.GetLabel())
 	type_ := parseType(typeCtx.GetType_(), v)
 
-	return nodes.RecordFieldType{Label: label, Type_: type_}
+	return nodes.RecordFieldType{Label: label, Type_: type_, Repr: typeCtx.GetText()}
 }
 
 func parseListOfRecordFieldType(typesCtx []parser.IRecordFieldTypeContext, v *ASTBuilder) []nodes.RecordFieldType {
@@ -114,7 +114,7 @@ func parseVariantFieldType(typeCtx parser.IVariantFieldTypeContext, v *ASTBuilde
 		type_ = optional.Of(parseType(typeCtx.GetType_(), v))
 	}
 
-	return nodes.VariantFieldType{Label: label, Type_: type_}
+	return nodes.VariantFieldType{Label: label, Type_: type_, Repr: typeCtx.GetText()}
 }
 
 func parseListOfVariantFieldType(typesCtx []parser.IVariantFieldTypeContext, v *ASTBuilder) []nodes.VariantFieldType {
@@ -133,7 +133,7 @@ func parsePatternBinding(patternBindingCtx parser.IPatternBindingContext, v *AST
 	pattern := parsePattern(patternBindingCtx.GetPat(), v)
 	expr := parseExpr(patternBindingCtx.GetRhs(), v)
 
-	return nodes.PatternBinding{Pattern: pattern, Rhs: expr}
+	return nodes.PatternBinding{Pattern: pattern, Rhs: expr, Repr: patternBindingCtx.GetText()}
 }
 
 func parseListOfPatternBinding(patternBindingsCtx []parser.IPatternBindingContext, v *ASTBuilder) []nodes.PatternBinding {
@@ -144,7 +144,7 @@ func parseBinding(bindingCtx parser.IBindingContext, v *ASTBuilder) nodes.Bindin
 	name := parseStellaIdent(bindingCtx.GetName())
 	expr := parseExpr(bindingCtx.GetRhs(), v)
 
-	return nodes.Binding{Name: name, Rhs: expr}
+	return nodes.Binding{Name: name, Rhs: expr, Repr: bindingCtx.GetText()}
 }
 
 func parseListOfBinding(bindingsCtx []parser.IBindingContext, v *ASTBuilder) []nodes.Binding {
@@ -155,7 +155,7 @@ func parseMatchCase(matchCaseCtx parser.IMatchCaseContext, v *ASTBuilder) nodes.
 	pattern := parsePattern(matchCaseCtx.GetPattern_(), v)
 	expr := parseExpr(matchCaseCtx.GetExpr_(), v)
 
-	return nodes.MatchCase{Pattern: pattern, Expr_: expr}
+	return nodes.MatchCase{Pattern: pattern, Expr_: expr, Repr: matchCaseCtx.GetText()}
 }
 
 func parseListOfMatchCase(matchCaseCtx []parser.IMatchCaseContext, v *ASTBuilder) []nodes.MatchCase {

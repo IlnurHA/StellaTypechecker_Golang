@@ -18,12 +18,12 @@ func (v *ASTBuilder) VisitDeclExceptionVariant(ctx *parser.DeclExceptionVariantC
 	name := parseStellaIdent(ctx.GetName())
 	type_ := v.Visit(ctx.GetChildOfType(0, nil)).(nodes.StellaType)
 
-	return nodes.ExceptionVariantDeclaration{Name: name, VariantType: type_}
+	return nodes.ExceptionVariantDeclaration{Name: name, VariantType: type_, Repr: ctx.GetText()}
 }
 
 func (v *ASTBuilder) VisitDeclExceptionType(ctx *parser.DeclExceptionTypeContext) interface{} {
 	type_ := v.Visit(ctx.GetChildOfType(0, nil)).(nodes.StellaType)
-	return nodes.ExceptionTypeDeclaration{ExceptionType: type_}
+	return nodes.ExceptionTypeDeclaration{ExceptionType: type_, Repr: ctx.GetText()}
 }
 
 func (v *ASTBuilder) VisitDeclFun(ctx *parser.DeclFunContext) interface{} {
@@ -38,7 +38,7 @@ func (v *ASTBuilder) VisitDeclFun(ctx *parser.DeclFunContext) interface{} {
 	}
 	expr := v.Visit(ctx.GetReturnExpr()).(nodes.Expr)
 
-	return nodes.FunctionDeclaration{Name: name, Params: parameters, Declarations: localDeclarations, ReturnType: returnType, ThrowTypes: throwTypes, Expr: expr}
+	return nodes.FunctionDeclaration{Name: name, Params: parameters, Declarations: localDeclarations, ReturnType: returnType, ThrowTypes: throwTypes, Expr: expr, Repr: ctx.GetText()}
 }
 
 func (v *ASTBuilder) VisitDeclFunGeneric(ctx *parser.DeclFunGenericContext) interface{} {
@@ -55,5 +55,5 @@ func (v *ASTBuilder) VisitDeclFunGeneric(ctx *parser.DeclFunGenericContext) inte
 	}
 	expr := v.Visit(ctx.GetReturnExpr()).(nodes.Expr)
 
-	return nodes.GenericFunctionDeclaration{Name: name, Params: parameters, Declarations: localDeclarations, ReturnType: returnType, ThrowTypes: throwTypes, Expr: expr, Generics: generics}
+	return nodes.GenericFunctionDeclaration{Name: name, Params: parameters, Declarations: localDeclarations, ReturnType: returnType, ThrowTypes: throwTypes, Expr: expr, Generics: generics, Repr: ctx.GetText()}
 }

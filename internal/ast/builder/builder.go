@@ -16,7 +16,7 @@ func NewASTBuilder() *ASTBuilder {
 }
 
 func (v *ASTBuilder) VisitLanguageCore(ctx *parser.LanguageCoreContext) interface{} {
-	return nodes.LanguageDeclaration{Name: "core"}
+	return nodes.LanguageDeclaration{Name: "core", Repr: ctx.GetText()}
 }
 
 func (v *ASTBuilder) VisitProgram(ctx *parser.ProgramContext) interface{} {
@@ -24,7 +24,12 @@ func (v *ASTBuilder) VisitProgram(ctx *parser.ProgramContext) interface{} {
 	extensions := parseExtensions(ctx, v)
 	declarations := parseDeclarations(ctx.GetDecls(), v)
 
-	return nodes.AProgram{LanguageDecl: languageDecl, Extensions: extensions, Declarations: declarations}
+	return nodes.AProgram{
+		LanguageDecl: languageDecl,
+		Extensions:   extensions,
+		Declarations: declarations,
+		Repr:         ctx.GetText(),
+	}
 }
 
 func (v *ASTBuilder) VisitAnExtension(ctx *parser.AnExtensionContext) interface{} {
