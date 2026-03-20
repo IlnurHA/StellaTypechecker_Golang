@@ -7,48 +7,6 @@ import (
 
 func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 	switch v := node.(type) {
-	case *nodes.AProgram:
-		ctx.AddNewScope()
-		defer ctx.RemoveLastScope()
-
-		hasMain := false
-
-		// Collect all declarations to context
-		for _, declaration := range v.Declarations {
-			declType, err := constructTypeFromDeclaration(&declaration)
-			name := v.LanguageDecl.Name
-			nameStella := nodes.StellaIdent{Name: name, Repr: name}
-
-			if err != nil {
-			}
-			success := ctx.AddVar(nameStella, declType)
-
-			if !success {
-				var typeError = NewTypeCheckErrorErrorType(ERROR_DUPLICATE_FUNCTION_DECLARATION)
-				typeError.AddIfEmptyFunctionName(nameStella)
-				typeError.AddIfEmptyExpr(v)
-				return nil, &typeError
-			}
-			hasMain = hasMain || (name == "main")
-		}
-
-		// Check declaration bodies
-		for _, declaration := range v.Declarations {
-			type_, _ := constructTypeFromDeclaration(&declaration)
-			err := CheckType(ctx, declaration, type_)
-
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		if !hasMain {
-			var typeError = NewTypeCheckErrorErrorType(ERROR_MISSING_MAIN)
-			return nil, &typeError
-		}
-
-		return nil, nil
-
 	case *nodes.ConstUnit:
 		return &nodes.TypeUnit{Repr: "unit"}, nil
 	case *nodes.ConstBool:
@@ -277,7 +235,19 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		err_.AddAdditionalInfo(fmt.Sprintf("Expected label: %s", v.Label.String()))
 		return nil, &err_
 	case *nodes.TypeAsc:
-		return v.Type_, CheckType(ctx, v.Expr_, v.Type_)
+		err := checkTypeConsistency(v.Type_)
+
+		if err != nil {
+			return nil, err
+		}
+
+		err = CheckType(ctx, v.Expr_, v.Type_)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return v.Type_, nil
 	case *nodes.Inl:
 		err := NewTypeCheckErrorErrorType(ERROR_AMBIGUOUS_SUM_TYPE)
 		err.AddIfEmptyExpr(v)
@@ -512,6 +482,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
+		err.AddAdditionalInfo(fmt.Sprintf("Not implemented type inference for %s", node))
 		return nil, &err
 	}
 }

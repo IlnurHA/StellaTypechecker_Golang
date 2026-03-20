@@ -1,6 +1,9 @@
 package typecheck
 
-import nodes "typechecker/internal/ast/nodes"
+import (
+	"fmt"
+	nodes "typechecker/internal/ast/nodes"
+)
 
 func checkPatternType(pattern nodes.Pattern, expectedType nodes.StellaType) (err *TypecheckError) {
 	defer func() {
@@ -39,7 +42,13 @@ func checkPatternType(pattern nodes.Pattern, expectedType nodes.StellaType) (err
 					}
 					// Pattern and type mismatch
 					// Error occured
-					break
+
+					if variantFieldType.Type_.IsEmpty() {
+						err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_NON_NULLARY_VARIANT_PATTERN)
+						return &err
+					}
+					err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_NULLARY_VARIANT_PATTERN)
+					return &err
 				}
 			}
 		}
@@ -48,6 +57,7 @@ func checkPatternType(pattern nodes.Pattern, expectedType nodes.StellaType) (err
 		return &err
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
+		err.AddAdditionalInfo(fmt.Sprintf("Not implemented checkPatternType for %s", pattern))
 		return &err
 
 	}
@@ -154,7 +164,7 @@ func checkExhaustivenessHelper(patterns []nodes.Pattern, expectedType nodes.Stel
 			return &err
 		}
 
-		splittedPatterns := splitPatternsVariant(patterns, v)
+		splittedPatterns := splitPatternsVariant(patterns)
 
 		for _, field := range v.FieldTypes {
 			if field.Type_.IsEmpty() {
@@ -191,7 +201,7 @@ func checkExhaustivenessHelper(patterns []nodes.Pattern, expectedType nodes.Stel
 			return &err
 		}
 
-		inlPatterns, inrPatterns := splitPatternsSum(patterns, v)
+		inlPatterns, inrPatterns := splitPatternsSum(patterns)
 
 		err := checkExhaustivenessHelper(inlPatterns, v.Left)
 
@@ -205,10 +215,11 @@ func checkExhaustivenessHelper(patterns []nodes.Pattern, expectedType nodes.Stel
 	}
 
 	err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
+	err.AddAdditionalInfo(fmt.Sprintf("Not implemented checkExhaustivenessHelper for %s", expectedType))
 	return &err
 }
 
-func splitPatternsVariant(patterns []nodes.Pattern, expectedType *nodes.TypeVariant) map[nodes.StellaIdent][]nodes.Pattern {
+func splitPatternsVariant(patterns []nodes.Pattern) map[nodes.StellaIdent][]nodes.Pattern {
 	variants := make(map[nodes.StellaIdent][]nodes.Pattern)
 
 	for _, pattern := range patterns {
@@ -222,7 +233,7 @@ func splitPatternsVariant(patterns []nodes.Pattern, expectedType *nodes.TypeVari
 	return variants
 }
 
-func splitPatternsSum(patterns []nodes.Pattern, expectedType *nodes.TypeSum) ([]nodes.Pattern, []nodes.Pattern) {
+func splitPatternsSum(patterns []nodes.Pattern) ([]nodes.Pattern, []nodes.Pattern) {
 	inlPatterns := make([]nodes.Pattern, 0)
 	inrPatterns := make([]nodes.Pattern, 0)
 

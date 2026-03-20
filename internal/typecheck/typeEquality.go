@@ -203,6 +203,7 @@ func CheckStellaType(actual nodes.StellaType, expected nodes.StellaType) (err *T
 		return CheckStellaType(lt.Type_, rt.Type_)
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
+		err.AddAdditionalInfo(fmt.Sprintf("Not implemented CheckStellaType for %s", actual))
 		return &err
 	}
 }

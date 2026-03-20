@@ -46,6 +46,7 @@ func ParseProgram(node nodes.AProgram) *TypecheckError {
 		default:
 			err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
 			err.AddIfEmptyExpr(decl)
+			err.AddAdditionalInfo(fmt.Sprintf("Not implemented parse program declaration switch for %s", decl))
 			return &err
 		}
 	}
@@ -124,6 +125,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 			default:
 				err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
 				err.AddIfEmptyExpr(decl)
+				err.AddAdditionalInfo(fmt.Sprintf("Not implemented check type function declaration switch for %s", decl))
 				return &err
 			}
 		}
@@ -437,8 +439,10 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		err_.AddAdditionalInfo(fmt.Sprintf("Expected label: %s", v.Label.String()))
 		return &err_
 	case *nodes.TypeAsc:
-		err := CheckStellaType(v.Type_, expectedType)
-		if err != nil {
+		if err := checkTypeConsistency(v.Type_); err != nil {
+			return err
+		}
+		if err := CheckStellaType(v.Type_, expectedType); err != nil {
 			return err
 		}
 		return CheckType(ctx, v.Expr_, expectedType)
@@ -609,6 +613,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
+		err.AddAdditionalInfo(fmt.Sprintf("Not implemented check type switch for %s", node))
 		return &err
 	}
 }

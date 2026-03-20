@@ -266,6 +266,6 @@ func (s ErrorType) String() string {
 		"ERROR_DUPLICATE_LET_BINDING",
 		"ERROR_DUPLICATE_TYPE_PARAMETER",
 
-		"UNIMPLEMENTED",
+		"NOT_IMPLEMENTED",
 	}[s]
 }

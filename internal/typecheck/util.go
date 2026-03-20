@@ -8,6 +8,12 @@ import (
 
 func addParametersToContext(ctx *Context, paramDecls []nodes.ParameterDeclaration) *TypecheckError {
 	for _, param := range paramDecls {
+		err := checkTypeConsistency(param.ParameterType)
+
+		if err != nil {
+			return err
+		}
+
 		res := ctx.AddVar(param.Name, param.ParameterType)
 
 		if !res {
@@ -27,13 +33,27 @@ func constructTypeFromDeclaration(declaration *nodes.Declaration) (nodes.StellaT
 		returnType := v.ReturnType.OrElse(&nodes.TypeUnit{Repr: "unit"})
 
 		for index, param := range v.Params {
+			err := checkTypeConsistency(param.ParameterType)
+
+			if err != nil {
+				return nil, err
+			}
+
 			paramTypes[index] = param.ParameterType
+		}
+
+		err := checkTypeConsistency(returnType)
+
+		if err != nil {
+			return nil, err
 		}
 
 		return &nodes.TypeFun{ParamTypes: paramTypes, ReturnType: returnType, Repr: ""}, nil
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
 		err.AddIfEmptyExpr(*declaration)
+		err.AddAdditionalInfo(fmt.Sprintf("Not implemented constructTypeFromDeclaration switch for %s", *declaration))
+
 		return nil, &err
 	}
 }
@@ -61,6 +81,75 @@ func showList[T fmt.Stringer](elems []T) string {
 	builder.WriteString("]")
 
 	return builder.String()
+}
+
+func checkTypeConsistency(type_ nodes.StellaType) *TypecheckError {
+	switch t := type_.(type) {
+	case *nodes.TypeBool, *nodes.TypeNat, *nodes.TypeUnit:
+		return nil
+	case *nodes.TypeFun:
+		for _, param := range t.ParamTypes {
+			err := checkTypeConsistency(param)
+
+			if err != nil {
+				return err
+			}
+		}
+
+		return checkTypeConsistency(t.ReturnType)
+	case *nodes.TypeList:
+		return checkTypeConsistency(t.Type_)
+	case *nodes.TypeParens:
+		return checkTypeConsistency(t.Type_)
+	case *nodes.TypeRef:
+		return checkTypeConsistency(t.Type_)
+	case *nodes.TypeSum:
+		err := checkTypeConsistency(t.Left)
+
+		if err != nil {
+			return err
+		}
+
+		return checkTypeConsistency(t.Right)
+	case *nodes.TypeTuple:
+		for _, type_ := range t.Types {
+			err := checkTypeConsistency(type_)
+
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	case *nodes.TypeRecord:
+		// Check for record field duplicate
+		labels := make(map[nodes.StellaIdent]bool)
+		for _, recordFieldType := range t.FieldTypes {
+			if _, ok := labels[recordFieldType.Label]; ok {
+				err := NewTypeCheckErrorErrorType(ERROR_DUPLICATE_RECORD_FIELDS)
+				err.AddAdditionalInfo(fmt.Sprintf("Label duplicate: %s", &recordFieldType.Label))
+				return &err
+			}
+			labels[recordFieldType.Label] = true
+		}
+		return nil
+	case *nodes.TypeVariant:
+		// Check for variant field duplicate
+		labels := make(map[nodes.StellaIdent]bool)
+		for _, recordFieldType := range t.FieldTypes {
+			if _, ok := labels[recordFieldType.Label]; ok {
+				err := NewTypeCheckErrorErrorType(ERROR_DUPLICATE_VARIANT_TYPE_FIELDS)
+				err.AddAdditionalInfo(fmt.Sprintf("Label duplicate: %s", &recordFieldType.Label))
+				return &err
+			}
+			labels[recordFieldType.Label] = true
+		}
+		return nil
+	default:
+		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
+		err.AddAdditionalInfo(fmt.Sprintf("Unimplemented check type consistency for %s", type_.String()))
+		return &err
+	}
 }
 
 // Pair defines a generic struct to hold two values of potentially different types.
