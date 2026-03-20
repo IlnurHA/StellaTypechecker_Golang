@@ -173,7 +173,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		tupleType, _ := inferredType.(*nodes.TypeTuple)
 
 		if v.Index >= len(tupleType.Types) {
-			err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_TUPLE_LENGTH)
+			err := NewTypeCheckErrorErrorType(ERROR_TUPLE_INDEX_OUT_OF_BOUNDS)
 			err.AddIfEmptyExpr(v)
 			err.AddAdditionalInfo(fmt.Sprintf("Actual length %d. Tried to access %d index", len(tupleType.Types), v.Index))
 			return nil, &err
@@ -230,9 +230,9 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			}
 		}
 
-		err_ := NewTypeCheckErrorErrorType(ERROR_MISSING_RECORD_FIELDS)
+		err_ := NewTypeCheckErrorErrorType(ERROR_TUPLE_INDEX_OUT_OF_BOUNDS)
 		err_.AddIfEmptyExpr(v)
-		err_.AddAdditionalInfo(fmt.Sprintf("Expected label: %s", v.Label.String()))
+		err_.AddAdditionalInfo(fmt.Sprintf("Unexpected label: %s", v.Label.String()))
 		return nil, &err_
 	case *nodes.TypeAsc:
 		err := checkTypeConsistency(v.Type_)
@@ -410,6 +410,12 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			return nil, &err
 		}
 	case *nodes.Match:
+		if len(v.Cases) == 0 {
+			err := NewTypeCheckErrorErrorType(ERROR_ILLEGAL_EMPTY_MATCHING)
+			err.AddIfEmptyExpr(node)
+			return nil, &err
+		}
+
 		inferredType, err := infer(ctx, v.Expr_)
 
 		if err != nil {

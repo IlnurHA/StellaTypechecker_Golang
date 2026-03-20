@@ -121,7 +121,14 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 					return err
 				}
 
-				ctx.AddVar(decl.Name, type_)
+				success := ctx.AddVar(decl.Name, type_)
+
+				if !success {
+					err := NewTypeCheckErrorErrorType(ERROR_DUPLICATE_FUNCTION_DECLARATION)
+					err.AddIfEmptyFunctionName(v.Name)
+					err.AddIfEmptyExpr(decl)
+					return &err
+				}
 			default:
 				err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
 				err.AddIfEmptyExpr(decl)
@@ -338,7 +345,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		tupleType, _ := inferredType.(*nodes.TypeTuple)
 
 		if v.Index >= len(tupleType.Types) {
-			err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_TUPLE_LENGTH)
+			err := NewTypeCheckErrorErrorType(ERROR_TUPLE_INDEX_OUT_OF_BOUNDS)
 			err.AddIfEmptyExpr(v)
 			err.AddAdditionalInfo(fmt.Sprintf("Actual length %d. Tried to access %d index", len(tupleType.Types), v.Index))
 			return &err
@@ -434,9 +441,9 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 			}
 		}
 
-		err_ := NewTypeCheckErrorErrorType(ERROR_MISSING_RECORD_FIELDS)
+		err_ := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_FIELD_ACCESS)
 		err_.AddIfEmptyExpr(v)
-		err_.AddAdditionalInfo(fmt.Sprintf("Expected label: %s", v.Label.String()))
+		err_.AddAdditionalInfo(fmt.Sprintf("Unexpected label: %s", v.Label.String()))
 		return &err_
 	case *nodes.TypeAsc:
 		if err := checkTypeConsistency(v.Type_); err != nil {
@@ -566,6 +573,12 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		listType := nodes.TypeFun{ParamTypes: []nodes.StellaType{expectedType}, ReturnType: expectedType}
 		return CheckType(ctx, v.Expr_, &listType)
 	case *nodes.Match:
+		if len(v.Cases) == 0 {
+			err := NewTypeCheckErrorErrorType(ERROR_ILLEGAL_EMPTY_MATCHING)
+			err.AddIfEmptyExpr(node)
+			return &err
+		}
+
 		inferredType, err := infer(ctx, v.Expr_)
 
 		if err != nil {

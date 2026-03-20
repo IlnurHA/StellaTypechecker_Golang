@@ -126,7 +126,7 @@ func checkTypeConsistency(type_ nodes.StellaType) *TypecheckError {
 		labels := make(map[nodes.StellaIdent]bool)
 		for _, recordFieldType := range t.FieldTypes {
 			if _, ok := labels[recordFieldType.Label]; ok {
-				err := NewTypeCheckErrorErrorType(ERROR_DUPLICATE_RECORD_FIELDS)
+				err := NewTypeCheckErrorErrorType(ERROR_DUPLICATE_RECORD_TYPE_FIELDS)
 				err.AddAdditionalInfo(fmt.Sprintf("Label duplicate: %s", &recordFieldType.Label))
 				return &err
 			}
