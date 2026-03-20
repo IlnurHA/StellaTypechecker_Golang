@@ -1,7 +1,8 @@
 package typecheck
 
 import (
-	"errors"
+	"fmt"
+	"strings"
 	nodes "typechecker/internal/ast/nodes"
 )
 
@@ -10,14 +11,15 @@ func addParametersToContext(ctx *Context, paramDecls []nodes.ParameterDeclaratio
 		res := ctx.AddVar(param.Name, param.ParameterType)
 
 		if !res {
-			err := NewTypeCheckErrorErrorType(ERROR_DUPLICATE_FUNCTION_PARAMETER).AddIfEmptyExpr(&param)
+			err := NewTypeCheckErrorErrorType(ERROR_DUPLICATE_FUNCTION_PARAMETER)
+			err.AddIfEmptyExpr(&param)
 			return &err
 		}
 	}
 	return nil
 }
 
-func constructTypeFromDeclaration(declaration *nodes.Declaration) (nodes.StellaType, error) {
+func constructTypeFromDeclaration(declaration *nodes.Declaration) (nodes.StellaType, *TypecheckError) {
 	declarationCheck := *declaration
 	switch v := declarationCheck.(type) {
 	case *nodes.FunctionDeclaration:
@@ -30,7 +32,9 @@ func constructTypeFromDeclaration(declaration *nodes.Declaration) (nodes.StellaT
 
 		return &nodes.TypeFun{ParamTypes: paramTypes, ReturnType: returnType, Repr: ""}, nil
 	default:
-		return nil, errors.New("Not Implemented")
+		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
+		err.AddIfEmptyExpr(*declaration)
+		return nil, &err
 	}
 }
 
@@ -42,6 +46,21 @@ func getTypeFromParameters(paramDecls []nodes.ParameterDeclaration) []nodes.Stel
 	}
 
 	return paramTypes
+}
+
+func showList[T fmt.Stringer](elems []T) string {
+	var builder strings.Builder
+
+	builder.WriteString("[")
+	for index, elem := range elems {
+		if index != 0 {
+			builder.WriteString(", ")
+		}
+		builder.WriteString(elem.String())
+	}
+	builder.WriteString("]")
+
+	return builder.String()
 }
 
 // Pair defines a generic struct to hold two values of potentially different types.

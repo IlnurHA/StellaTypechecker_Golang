@@ -1,6 +1,7 @@
 package typecheck
 
 import (
+	"fmt"
 	nodes "typechecker/internal/ast/nodes"
 )
 
@@ -24,7 +25,8 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 
 			if !success {
 				var typeError = NewTypeCheckErrorErrorType(ERROR_DUPLICATE_FUNCTION_DECLARATION)
-				typeError = typeError.AddIfEmptyFunctionName(nameStella).AddIfEmptyExpr(v)
+				typeError.AddIfEmptyFunctionName(nameStella)
+				typeError.AddIfEmptyExpr(v)
 				return nil, &typeError
 			}
 			hasMain = hasMain || (name == "main")
@@ -57,7 +59,8 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		type_ := ctx.GetVarType(v.Name)
 
 		if type_.IsEmpty() {
-			var err = NewTypeCheckErrorErrorType(ERROR_UNDEFINED_VARIABLE).AddIfEmptyExpr(&v.Name)
+			var err = NewTypeCheckErrorErrorType(ERROR_UNDEFINED_VARIABLE)
+			err.AddIfEmptyExpr(&v.Name)
 			return nil, &err
 		}
 		return type_.Require(), nil
@@ -154,11 +157,19 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		if _, ok := inferredType.(*nodes.TypeFun); ok {
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_NOT_A_FUNCTION)
-			err = err.AddIfEmptyExpr(v.Function).AddIfEmptyActualType(inferredType)
+			err.AddIfEmptyExpr(v.Function)
+			err.AddIfEmptyActualType(inferredType)
 			return nil, &err
 		}
 
 		inferredFunType, _ := inferredType.(*nodes.TypeFun)
+
+		if len(v.Args) != len(inferredFunType.ParamTypes) {
+			err := NewTypeCheckErrorErrorType(ERROR_INCORRECT_NUMBER_OF_ARGUMENTS)
+			err.AddIfEmptyActualType(inferredFunType)
+			err.AddAdditionalInfo(fmt.Sprintf("Expected %d. Got %d", len(inferredFunType.ParamTypes), len(v.Args)))
+			return nil, &err
+		}
 
 		for _, pair := range Zip(v.Args, inferredFunType.ParamTypes) {
 			expr := pair.First
@@ -196,17 +207,21 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		if _, ok := inferredType.(*nodes.TypeTuple); ok {
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_NOT_A_TUPLE)
-			err = err.AddIfEmptyExpr(v.Subexpr).AddIfEmptyActualType(inferredType)
+			err.AddIfEmptyExpr(v.Subexpr)
+			err.AddIfEmptyActualType(inferredType)
 			return nil, &err
 		}
 
 		tupleType, _ := inferredType.(*nodes.TypeTuple)
 
 		if v.Index >= len(tupleType.Types) {
-			// TODO show actual and expected tuple length
-			err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_TUPLE_LENGTH).AddIfEmptyExpr(v)
+			err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_TUPLE_LENGTH)
+			err.AddIfEmptyExpr(v)
+			err.AddAdditionalInfo(fmt.Sprintf("Actual length %d. Tried to access %d index", len(tupleType.Types), v.Index))
 			return nil, &err
 		}
+
+		return tupleType.Types[v.Index], nil
 
 	case *nodes.Record:
 		recordFields := make(map[nodes.StellaIdent]bool, len(v.Bindings))
@@ -216,8 +231,9 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			_, ok := recordFields[binding.Name]
 
 			if ok {
-				// TODO show duplicated label
-				err := NewTypeCheckErrorErrorType(ERROR_DUPLICATE_RECORD_FIELDS).AddIfEmptyExpr(v)
+				err := NewTypeCheckErrorErrorType(ERROR_DUPLICATE_RECORD_FIELDS)
+				err.AddIfEmptyExpr(v)
+				err.AddAdditionalInfo(fmt.Sprintf("Duplicate label: %s", &binding.Name))
 				return nil, &err
 			}
 
@@ -243,7 +259,8 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		if _, ok := inferredType.(*nodes.TypeRecord); ok {
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_NOT_A_RECORD)
-			err = err.AddIfEmptyExpr(v.Subexpr).AddIfEmptyActualType(inferredType)
+			err.AddIfEmptyExpr(v.Subexpr)
+			err.AddIfEmptyActualType(inferredType)
 			return nil, &err
 		}
 
@@ -255,9 +272,9 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			}
 		}
 
-		// TODO show expected label
 		err_ := NewTypeCheckErrorErrorType(ERROR_MISSING_RECORD_FIELDS)
-		err_ = err_.AddIfEmptyExpr(v)
+		err_.AddIfEmptyExpr(v)
+		err_.AddAdditionalInfo(fmt.Sprintf("Expected label: %s", v.Label.String()))
 		return nil, &err_
 	case *nodes.TypeAsc:
 		return v.Type_, CheckType(ctx, v.Expr_, v.Type_)
@@ -315,7 +332,8 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			if _, ok := inferredType.(*nodes.TypeList); ok {
 			} else {
 				err := NewTypeCheckErrorErrorType(ERROR_NOT_A_LIST)
-				err = err.AddIfEmptyExpr(v.Tail).AddIfEmptyActualType(inferredType)
+				err.AddIfEmptyExpr(v.Tail)
+				err.AddIfEmptyActualType(inferredType)
 				return nil, &err
 			}
 
@@ -349,7 +367,8 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			return listType.Type_, nil
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_NOT_A_LIST)
-			err = err.AddIfEmptyExpr(v.List).AddIfEmptyActualType(inferredType)
+			err.AddIfEmptyExpr(v.List)
+			err.AddIfEmptyActualType(inferredType)
 			return nil, &err
 		}
 	case *nodes.Tail:
@@ -363,7 +382,8 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			return listType, nil
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_NOT_A_LIST)
-			err = err.AddIfEmptyExpr(v.List).AddIfEmptyActualType(inferredType)
+			err.AddIfEmptyExpr(v.List)
+			err.AddIfEmptyActualType(inferredType)
 			return nil, &err
 		}
 	case *nodes.IsEmpty:
@@ -377,7 +397,8 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			return &nodes.TypeBool{Repr: "bool"}, nil
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_NOT_A_LIST)
-			err = err.AddIfEmptyExpr(v.List).AddIfEmptyActualType(inferredType)
+			err.AddIfEmptyExpr(v.List)
+			err.AddIfEmptyActualType(inferredType)
 			return nil, &err
 		}
 	case *nodes.Variant:
@@ -394,9 +415,9 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		if listType, ok := inferredType.(*nodes.TypeFun); ok {
 
 			if len(listType.ParamTypes) != 1 {
-				// TODO show actual and expected number of parameters
-				err_ := NewTypeCheckErrorErrorType(ERROR_INCORRECT_NUMBER_OF_ARGUMENTS).AddIfEmptyExpr(v.Expr_)
-
+				err_ := NewTypeCheckErrorErrorType(ERROR_INCORRECT_NUMBER_OF_ARGUMENTS)
+				err_.AddIfEmptyExpr(v.Expr_)
+				err.AddAdditionalInfo(fmt.Sprintf("Expected 1. Got %d", len(listType.ParamTypes)))
 				return nil, &err_
 			}
 
@@ -404,8 +425,9 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 				var expectedFunType = nodes.TypeFun{ParamTypes: listType.ParamTypes, ReturnType: listType.ParamTypes[0]}
 
 				err_ := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_TYPE_FOR_EXPRESSION)
-				err_ = err_.AddIfEmptyActualType(inferredType).AddIfEmptyExpectedType(&expectedFunType)
-				err_ = err_.AddIfEmptyExpr(v.Expr_)
+				err_.AddIfEmptyActualType(inferredType)
+				err_.AddIfEmptyExpectedType(&expectedFunType)
+				err_.AddIfEmptyExpr(v.Expr_)
 
 				return nil, &err_
 			}
@@ -413,7 +435,8 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			return listType.ReturnType, nil
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_NOT_A_FUNCTION)
-			err = err.AddIfEmptyExpr(v.Expr_).AddIfEmptyActualType(inferredType)
+			err.AddIfEmptyExpr(v.Expr_)
+			err.AddIfEmptyActualType(inferredType)
 			return nil, &err
 		}
 	case *nodes.Match:
@@ -481,8 +504,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		err := patternBindingsToContext(ctx, v.PatternBindings)
 		if err != nil {
 			if err.errorType == ERROR_DUPLICATE_LET_BINDING {
-				err_ := err.AddIfEmptyExpr(node)
-				return nil, &err_
+				err.AddIfEmptyExpr(node)
 			}
 			return nil, err
 		}
@@ -492,6 +514,4 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
 		return nil, &err
 	}
-	err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
-	return nil, &err
 }

@@ -2,7 +2,13 @@ package typecheck
 
 import nodes "typechecker/internal/ast/nodes"
 
-func checkPatternType(pattern nodes.Pattern, expectedType nodes.StellaType) *TypecheckError {
+func checkPatternType(pattern nodes.Pattern, expectedType nodes.StellaType) (err *TypecheckError) {
+	defer func() {
+		if err != nil {
+			err.OverwritePattern(pattern)
+		}
+	}()
+
 	switch p := pattern.(type) {
 	case *nodes.PatternVar:
 		return nil
@@ -11,7 +17,7 @@ func checkPatternType(pattern nodes.Pattern, expectedType nodes.StellaType) *Typ
 			return checkPatternType(p.Pattern, v.Left)
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_PATTERN_FOR_TYPE)
-			err = err.AddIfEmptyExpectedType(expectedType).AddIfEmptyExpr(pattern)
+			err.AddIfEmptyExpectedType(expectedType)
 			return &err
 		}
 	case *nodes.PatternInr:
@@ -19,7 +25,7 @@ func checkPatternType(pattern nodes.Pattern, expectedType nodes.StellaType) *Typ
 			return checkPatternType(p.Pattern, v.Right)
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_PATTERN_FOR_TYPE)
-			err = err.AddIfEmptyExpectedType(expectedType).AddIfEmptyExpr(pattern)
+			err.AddIfEmptyExpectedType(expectedType)
 			return &err
 		}
 	case *nodes.PatternVariant:
@@ -38,10 +44,10 @@ func checkPatternType(pattern nodes.Pattern, expectedType nodes.StellaType) *Typ
 			}
 		}
 		err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_PATTERN_FOR_TYPE)
-		err = err.AddIfEmptyExpectedType(expectedType).AddIfEmptyExpr(pattern)
+		err.AddIfEmptyExpectedType(expectedType)
 		return &err
 	default:
-		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED).AddIfEmptyExpr(pattern)
+		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
 		return &err
 
 	}

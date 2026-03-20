@@ -1,8 +1,18 @@
 package typecheck
 
-import nodes "typechecker/internal/ast/nodes"
+import (
+	"fmt"
+	nodes "typechecker/internal/ast/nodes"
+)
 
-func CheckStellaType(actual nodes.StellaType, expected nodes.StellaType) *TypecheckError {
+func CheckStellaType(actual nodes.StellaType, expected nodes.StellaType) (err *TypecheckError) {
+	defer func() {
+		if err != nil {
+			err.OverwriteActualType(actual)
+			err.OverwriteExpectedType(expected)
+		}
+	}()
+
 	switch lt := actual.(type) {
 	case *nodes.TypeBool:
 		_, ok := expected.(*nodes.TypeBool)
@@ -100,10 +110,12 @@ func CheckStellaType(actual nodes.StellaType, expected nodes.StellaType) *Typech
 	case *nodes.TypeRecord:
 		rt, ok := expected.(*nodes.TypeRecord)
 
-		if !ok || len(rt.FieldTypes) != len(lt.FieldTypes) {
+		if !ok {
 			err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_TYPE_FOR_EXPRESSION)
 			return &err
 		}
+
+		notFoundFields := make([]*nodes.StellaIdent, 0)
 
 		for _, rtField := range rt.FieldTypes {
 			isFound := false
@@ -120,10 +132,19 @@ func CheckStellaType(actual nodes.StellaType, expected nodes.StellaType) *Typech
 			}
 
 			if !isFound {
-				// TODO add extra info of unexpected field
-				err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_RECORD_FIELDS)
-				return &err
+				notFoundFields = append(notFoundFields, &rtField.Label)
 			}
+		}
+
+		if len(notFoundFields) != 0 {
+			err := NewTypeCheckErrorErrorType(ERROR_MISSING_RECORD_FIELDS)
+			err.AddAdditionalInfo(fmt.Sprintf("Missing record fields: %s", showList(notFoundFields)))
+			return &err
+		}
+
+		if len(rt.FieldTypes) < len(lt.FieldTypes) {
+			err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_RECORD_FIELDS)
+			return &err
 		}
 
 		return nil
@@ -165,8 +186,7 @@ func CheckStellaType(actual nodes.StellaType, expected nodes.StellaType) *Typech
 			}
 
 			if !isFound {
-				// TODO add extra info of unexpected field
-				err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_VARIANT_LABEL)
+				err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_TYPE_FOR_EXPRESSION)
 				return &err
 			}
 		}

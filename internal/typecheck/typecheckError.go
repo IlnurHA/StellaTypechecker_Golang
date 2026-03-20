@@ -66,44 +66,54 @@ func (err *TypecheckError) IsAmbiguousError() bool {
 		err.errorType == ERROR_AMBIGUOUS_VARIANT_TYPE
 }
 
-func (err TypecheckError) AddIfEmptyActualType(actualType nodes.StellaType) TypecheckError {
+func (err *TypecheckError) AddIfEmptyActualType(actualType nodes.StellaType) {
 	if err.actualType.IsEmpty() {
 		err.actualType = optional.Of(actualType)
 	}
-	return err
 }
 
-func (err TypecheckError) AddIfEmptyExpectedType(expectedType nodes.StellaType) TypecheckError {
+func (err *TypecheckError) AddIfEmptyExpectedType(expectedType nodes.StellaType) {
 	if err.expectedType.IsEmpty() {
 		err.expectedType = optional.Of(expectedType)
 	}
-	return err
 }
 
-func (err TypecheckError) AddIfEmptyPattern(pattern nodes.Pattern) TypecheckError {
+func (err *TypecheckError) AddIfEmptyPattern(pattern nodes.Pattern) {
 	if err.pattern.IsEmpty() {
 		err.pattern = optional.Of(pattern)
 	}
-	return err
 }
 
-func (err TypecheckError) AddIfEmptyExpr(expr nodes.Node) TypecheckError {
+func (err *TypecheckError) AddIfEmptyExpr(expr nodes.Node) {
 	if err.expr.IsEmpty() {
 		err.expr = optional.Of(expr)
 	}
-	return err
 }
 
-func (err TypecheckError) AddIfEmptyFunctionName(functionName nodes.StellaIdent) TypecheckError {
+func (err *TypecheckError) AddIfEmptyFunctionName(functionName nodes.StellaIdent) {
 	if err.functionName.IsEmpty() {
 		err.functionName = optional.Of(functionName)
 	}
-	return err
 }
 
-func (err TypecheckError) RewriteErrorType(newErrorType ErrorType) TypecheckError {
+func (err *TypecheckError) RewriteErrorType(newErrorType ErrorType) {
 	err.errorType = newErrorType
-	return err
+}
+
+func (err *TypecheckError) AddAdditionalInfo(info string) {
+	err.additionalInfo = optional.Of(err.additionalInfo.OrElse("") + info + "\n")
+}
+
+func (err *TypecheckError) OverwriteActualType(actualType nodes.StellaType) {
+	err.actualType = optional.Of(actualType)
+}
+
+func (err *TypecheckError) OverwriteExpectedType(expectedType nodes.StellaType) {
+	err.expectedType = optional.Of(expectedType)
+}
+
+func (err *TypecheckError) OverwritePattern(pattern nodes.Pattern) {
+	err.pattern = optional.Of(pattern)
 }
 
 const (
