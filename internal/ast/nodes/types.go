@@ -17,8 +17,8 @@ type VariantFieldType struct {
 }
 
 type StellaType interface {
+	Node
 	isType()
-	String() string
 }
 
 type TypeBool struct {

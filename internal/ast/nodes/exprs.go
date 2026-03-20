@@ -24,8 +24,8 @@ type MatchCase struct {
 }
 
 type Expr interface {
+	Node
 	isExpr()
-	String() string
 }
 
 type DotRecord struct {

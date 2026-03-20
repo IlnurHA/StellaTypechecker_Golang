@@ -16,8 +16,8 @@ type Annotation struct {
 }
 
 type Declaration interface {
+	Node
 	isDecl()
-	String() string
 }
 
 type FunctionDeclaration struct {

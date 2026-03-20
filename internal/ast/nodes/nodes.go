@@ -40,3 +40,14 @@ func (x *Extension) String() string           { return x.Repr }
 func (x *MemoryAddress) String() string       { return x.Repr }
 func (x *LanguageDeclaration) String() string { return x.Repr }
 func (x *AProgram) String() string            { return x.Repr }
+
+// Eq
+func (x *StellaIdent) Equal(other interface{}) bool {
+	o, ok := other.(*StellaIdent)
+
+	if !ok {
+		return false
+	}
+
+	return o.Name == x.Name
+}

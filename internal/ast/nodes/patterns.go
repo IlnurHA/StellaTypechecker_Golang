@@ -3,8 +3,8 @@ package ast
 import "github.com/neocotic/go-optional"
 
 type Pattern interface {
+	Node
 	isPattern()
-	String() string
 }
 
 type PatternVariant struct {
