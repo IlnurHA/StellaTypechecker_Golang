@@ -131,9 +131,5 @@ func (v *ASTBuilder) VisitTypeVar(ctx *parser.TypeVarContext) interface{} {
 }
 
 func (v *ASTBuilder) VisitTypeParens(ctx *parser.TypeParensContext) interface{} {
-	subtype := parseType(ctx.GetType_(), v)
-	return &nodes.TypeParens{
-		Type_: subtype,
-		Repr:  ctx.GetText(),
-	}
+	return parseType(ctx.GetType_(), v)
 }
