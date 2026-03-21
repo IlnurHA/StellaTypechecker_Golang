@@ -486,6 +486,19 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		}
 		return infer(ctx, v.Body)
 
+	case *nodes.Sequence:
+		err := CheckType(ctx, v.Expr1, &nodes.TypeUnit{Repr: "unit"})
+
+		if err != nil {
+			return nil, err
+		}
+
+		return infer(ctx, v.Expr2)
+	case *nodes.TerminatingSemicolon:
+		return infer(ctx, v.Expr_)
+	case *nodes.ParenthesisedExpr:
+		return infer(ctx, v.Expr_)
+
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
 		err.AddAdditionalInfo(fmt.Sprintf("Not implemented type inference for %s", node))

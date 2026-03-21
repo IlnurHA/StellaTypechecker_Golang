@@ -169,7 +169,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 	case *nodes.ConstInt:
 		return CheckStellaType(&nodes.TypeNat{Repr: "Nat"}, expectedType)
 	case *nodes.Var:
-		println("Expr:", v.Name.Name)
+		// println("Expr:", v.Name.Name)
 		type_ := ctx.GetVarType(v.Name)
 
 		if type_.IsEmpty() {
@@ -637,6 +637,10 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		}
 
 		return CheckType(ctx, v.Expr2, expectedType)
+	case *nodes.TerminatingSemicolon:
+		return CheckType(ctx, v.Expr_, expectedType)
+	case *nodes.ParenthesisedExpr:
+		return CheckType(ctx, v.Expr_, expectedType)
 
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
