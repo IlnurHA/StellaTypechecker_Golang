@@ -461,6 +461,8 @@ func (x *LogicAnd) isNode()             {}
 func (x *LogicAnd) isExpr()             {}
 func (x *Ref) isNode()                  {}
 func (x *Ref) isExpr()                  {}
+func (x *Deref) isNode()                {}
+func (x *Deref) isExpr()                {}
 func (x *Add) isNode()                  {}
 func (x *Add) isExpr()                  {}
 func (x *Subtract) isNode()             {}

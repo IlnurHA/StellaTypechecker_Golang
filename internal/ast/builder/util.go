@@ -11,9 +11,8 @@ import (
 func parseExtensions(ctx *parser.ProgramContext, v *ASTBuilder) []nodes.Extension {
 	total_extension_size := 0
 	extensions := make([][]string, len(ctx.GetExtensions()))
-
 	for _, extension := range ctx.GetExtensions() {
-		var exts = v.Visit(extension).([]string)
+		var exts = extension.Accept(v).([]string)
 		extensions = append(extensions, exts)
 		total_extension_size += len(exts)
 	}
@@ -37,7 +36,7 @@ func parseParameterDeclarations(params []parser.IParamDeclContext, v *ASTBuilder
 
 	parameters := make([]nodes.ParameterDeclaration, len(params))
 	for index, param := range params {
-		parameters[index] = v.Visit(param).(nodes.ParameterDeclaration)
+		parameters[index] = param.Accept(v).(nodes.ParameterDeclaration)
 	}
 	return parameters
 }
@@ -45,13 +44,13 @@ func parseParameterDeclarations(params []parser.IParamDeclContext, v *ASTBuilder
 func parseLocalDeclarations(decls []parser.IDeclContext, v *ASTBuilder) []nodes.Declaration {
 	declarations := make([]nodes.Declaration, len(decls))
 	for index, decl := range decls {
-		declarations[index] = v.Visit(decl).(nodes.Declaration)
+		declarations[index] = decl.Accept(v).(nodes.Declaration)
 	}
 	return declarations
 }
 
 func parseType(typeCtx parser.IStellatypeContext, v *ASTBuilder) nodes.StellaType {
-	return v.Visit(typeCtx).(nodes.StellaType)
+	return (typeCtx.Accept(v)).(nodes.StellaType)
 }
 
 func parseListOfTypes(typesCtx []parser.IStellatypeContext, v *ASTBuilder) []nodes.StellaType {
@@ -70,14 +69,14 @@ func parseDeclarations(declarationsCtx []parser.IDeclContext, v *ASTBuilder) []n
 	declarations := make([]nodes.Declaration, len(declarationsCtx))
 
 	for index, declarationCtx := range declarationsCtx {
-		declarations[index] = v.Visit(declarationCtx).(nodes.Declaration)
+		declarations[index] = declarationCtx.Accept(v).(nodes.Declaration)
 	}
 
 	return declarations
 }
 
 func parsePattern(patternCtx parser.IPatternContext, v *ASTBuilder) nodes.Pattern {
-	return v.Visit(patternCtx).(nodes.Pattern)
+	return patternCtx.Accept(v).(nodes.Pattern)
 }
 
 func parseListOfPattern(patternsCtx []parser.IPatternContext, v *ASTBuilder) []nodes.Pattern {
@@ -122,7 +121,15 @@ func parseListOfVariantFieldType(typesCtx []parser.IVariantFieldTypeContext, v *
 }
 
 func parseExpr(exprCtx parser.IExprContext, v *ASTBuilder) nodes.Expr {
-	return v.Visit(exprCtx).(nodes.Expr)
+	// res := exprCtx.Accept(v)
+
+	// if res == nil {
+	// 	println("Got nil")
+	// 	println("Expr:", exprCtx.GetText())
+	// 	println("Rule: ", exprCtx.GetParser().GetRuleNames()[exprCtx.GetRuleIndex()])
+	// 	println("Altarnative rule index", exprCtx.GetAltNumber())
+	// }
+	return exprCtx.Accept(v).(nodes.Expr)
 }
 
 func parseListOfExpr(exprsCtx []parser.IExprContext, v *ASTBuilder) []nodes.Expr {

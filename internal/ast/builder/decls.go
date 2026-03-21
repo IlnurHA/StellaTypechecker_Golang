@@ -11,19 +11,19 @@ func (v *ASTBuilder) VisitDeclTypeAlias(ctx *parser.DeclTypeAliasContext) interf
 	name := parseStellaIdent(ctx.GetName())
 	type_ := v.Visit(ctx.GetChildOfType(0, nil)).(nodes.StellaType)
 
-	return nodes.TypeAliasDeclaration{Name: name, Atype: type_}
+	return &nodes.TypeAliasDeclaration{Name: name, Atype: type_}
 }
 
 func (v *ASTBuilder) VisitDeclExceptionVariant(ctx *parser.DeclExceptionVariantContext) interface{} {
 	name := parseStellaIdent(ctx.GetName())
 	type_ := v.Visit(ctx.GetChildOfType(0, nil)).(nodes.StellaType)
 
-	return nodes.ExceptionVariantDeclaration{Name: name, VariantType: type_, Repr: ctx.GetText()}
+	return &nodes.ExceptionVariantDeclaration{Name: name, VariantType: type_, Repr: ctx.GetText()}
 }
 
 func (v *ASTBuilder) VisitDeclExceptionType(ctx *parser.DeclExceptionTypeContext) interface{} {
 	type_ := v.Visit(ctx.GetChildOfType(0, nil)).(nodes.StellaType)
-	return nodes.ExceptionTypeDeclaration{ExceptionType: type_, Repr: ctx.GetText()}
+	return &nodes.ExceptionTypeDeclaration{ExceptionType: type_, Repr: ctx.GetText()}
 }
 
 func (v *ASTBuilder) VisitDeclFun(ctx *parser.DeclFunContext) interface{} {
@@ -34,11 +34,11 @@ func (v *ASTBuilder) VisitDeclFun(ctx *parser.DeclFunContext) interface{} {
 
 	returnType := optional.Empty[nodes.StellaType]()
 	if ctx.GetReturnType() != nil {
-		returnType = optional.Of(v.Visit(ctx.GetReturnType()).(nodes.StellaType))
+		returnType = optional.Of(ctx.GetReturnType().Accept(v).(nodes.StellaType))
 	}
-	expr := v.Visit(ctx.GetReturnExpr()).(nodes.Expr)
+	expr := ctx.GetReturnExpr().Accept(v).(nodes.Expr)
 
-	return nodes.FunctionDeclaration{Name: name, Params: parameters, Declarations: localDeclarations, ReturnType: returnType, ThrowTypes: throwTypes, Expr: expr, Repr: ctx.GetText()}
+	return &nodes.FunctionDeclaration{Name: name, Params: parameters, Declarations: localDeclarations, ReturnType: returnType, ThrowTypes: throwTypes, Expr: expr, Repr: ctx.GetText()}
 }
 
 func (v *ASTBuilder) VisitDeclFunGeneric(ctx *parser.DeclFunGenericContext) interface{} {
@@ -51,9 +51,9 @@ func (v *ASTBuilder) VisitDeclFunGeneric(ctx *parser.DeclFunGenericContext) inte
 
 	returnType := optional.Empty[nodes.StellaType]()
 	if ctx.GetReturnType() != nil {
-		returnType = optional.Of(v.Visit(ctx.GetReturnType()).(nodes.StellaType))
+		returnType = optional.Of(ctx.GetReturnType().Accept(v).(nodes.StellaType))
 	}
-	expr := v.Visit(ctx.GetReturnExpr()).(nodes.Expr)
+	expr := ctx.GetReturnExpr().Accept(v).(nodes.Expr)
 
-	return nodes.GenericFunctionDeclaration{Name: name, Params: parameters, Declarations: localDeclarations, ReturnType: returnType, ThrowTypes: throwTypes, Expr: expr, Generics: generics, Repr: ctx.GetText()}
+	return &nodes.GenericFunctionDeclaration{Name: name, Params: parameters, Declarations: localDeclarations, ReturnType: returnType, ThrowTypes: throwTypes, Expr: expr, Generics: generics, Repr: ctx.GetText()}
 }
