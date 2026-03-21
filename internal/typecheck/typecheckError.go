@@ -117,8 +117,8 @@ func (err *TypecheckError) OverwritePattern(pattern nodes.Pattern) {
 }
 
 const (
-	errorType        = "Type Error: %s"
-	errorDescription = "%s"
+	errorType        = "Type Error: %s\n"
+	errorDescription = "%s\n"
 	expectedType     = "Expected type:\n\t%s\n"
 	actualType       = "Actual type:\n\t%s\n"
 	inPattern        = "in pattern: %s\n"
@@ -134,27 +134,27 @@ func (err *TypecheckError) String() string {
 	fmt.Fprintf(&builder, errorDescription, "<TODO: ErrorDescription>")
 
 	if err.expectedType.IsPresent() {
-		var expectedTypeNode, _ = err.expectedType.Get()
-		fmt.Fprintf(&builder, expectedType, expectedTypeNode.String())
+		var node = err.expectedType.Require()
+		fmt.Fprintf(&builder, expectedType, node.String())
 	}
 
 	if err.actualType.IsPresent() {
-		var node, _ = err.expectedType.Get()
+		var node = err.actualType.Require()
 		fmt.Fprintf(&builder, actualType, node.String())
 	}
 
 	if err.pattern.IsPresent() {
-		var node, _ = err.expectedType.Get()
+		var node = err.pattern.Require()
 		fmt.Fprintf(&builder, inPattern, node.String())
 	}
 
 	if err.expr.IsPresent() {
-		var node, _ = err.expectedType.Get()
+		var node = err.expr.Require()
 		fmt.Fprintf(&builder, inExpr, node.String())
 	}
 
 	if err.functionName.IsPresent() {
-		var node, _ = err.expectedType.Get()
+		var node = err.functionName.Require()
 		fmt.Fprintf(&builder, inFunction, node.String())
 	}
 

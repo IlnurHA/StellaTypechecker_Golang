@@ -15,6 +15,7 @@ func addParametersToContext(ctx *Context, paramDecls []nodes.ParameterDeclaratio
 		}
 
 		res := ctx.AddVar(param.Name, param.ParameterType)
+		println("Tried to add", param.Name.String(), "with type", param.ParameterType.String(), "; success:", res)
 
 		if !res {
 			err := NewTypeCheckErrorErrorType(ERROR_DUPLICATE_FUNCTION_PARAMETER)

@@ -8,11 +8,11 @@ import (
 )
 
 type ScopeStack struct {
-	scopes []*Scope
+	scopes []Scope
 }
 
-func NewScopeStack() *ScopeStack {
-	return &ScopeStack{scopes: []*Scope{NewScope()}}
+func NewScopeStack() ScopeStack {
+	return ScopeStack{scopes: []Scope{NewScope()}}
 }
 
 func (ss *ScopeStack) getLastScope() *Scope {
@@ -20,7 +20,7 @@ func (ss *ScopeStack) getLastScope() *Scope {
 		return nil
 	}
 
-	return ss.scopes[len(ss.scopes)-1]
+	return &ss.scopes[len(ss.scopes)-1]
 }
 
 func (ss *ScopeStack) RemoveLastScope() {
@@ -37,7 +37,8 @@ func (ss *ScopeStack) AddNewScope() {
 }
 
 func (ss *ScopeStack) AddVar(variable nodes.StellaIdent, type_ nodes.StellaType) bool {
-	return ss.getLastScope().AddVar(variable, type_)
+	scope := ss.getLastScope()
+	return scope.AddVar(variable, type_)
 }
 
 func (ss *ScopeStack) GetVarType(variable nodes.StellaIdent) optional.Optional[nodes.StellaType] {

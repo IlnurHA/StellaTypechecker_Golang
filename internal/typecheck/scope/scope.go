@@ -10,8 +10,8 @@ type Scope struct {
 	variables map[nodes.StellaIdent]nodes.StellaType
 }
 
-func NewScope() *Scope {
-	return &Scope{variables: make(map[nodes.StellaIdent]nodes.StellaType)}
+func NewScope() Scope {
+	return Scope{variables: make(map[nodes.StellaIdent]nodes.StellaType, 0)}
 }
 
 func (s *Scope) GetVarType(variable nodes.StellaIdent) optional.Optional[nodes.StellaType] {
@@ -26,5 +26,6 @@ func (s *Scope) AddVar(variable nodes.StellaIdent, type_ nodes.StellaType) bool 
 	if _, ok := s.variables[variable]; ok {
 		return false
 	}
+	s.variables[variable] = type_
 	return true
 }

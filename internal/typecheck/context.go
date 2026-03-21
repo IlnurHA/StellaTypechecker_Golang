@@ -8,7 +8,7 @@ import (
 )
 
 type Context struct {
-	scope *scope.ScopeStack
+	scope scope.ScopeStack
 }
 
 func NewContext() *Context {

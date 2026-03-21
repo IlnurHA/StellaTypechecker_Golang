@@ -10,9 +10,9 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 	case *nodes.ConstUnit:
 		return &nodes.TypeUnit{Repr: "unit"}, nil
 	case *nodes.ConstBool:
-		return &nodes.TypeBool{Repr: "bool"}, nil
+		return &nodes.TypeBool{Repr: "Bool"}, nil
 	case *nodes.ConstInt:
-		return &nodes.TypeNat{Repr: "nat"}, nil
+		return &nodes.TypeNat{Repr: "Nat"}, nil
 	case *nodes.Var:
 		type_ := ctx.GetVarType(v.Name)
 
@@ -23,7 +23,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		}
 		return type_.Require(), nil
 	case *nodes.If:
-		err := CheckType(ctx, v.Condition, &nodes.TypeBool{Repr: "bool"})
+		err := CheckType(ctx, v.Condition, &nodes.TypeBool{Repr: "Bool"})
 
 		if err != nil {
 			return nil, err
@@ -43,7 +43,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 
 		return inferredType, nil
 	case *nodes.Succ:
-		natType := nodes.TypeNat{Repr: "nat"}
+		natType := nodes.TypeNat{Repr: "Nat"}
 		err := CheckType(ctx, v.N, &natType)
 
 		if err != nil {
@@ -53,7 +53,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 
 		return &natType, nil
 	case *nodes.IsZero:
-		natType := nodes.TypeNat{Repr: "nat"}
+		natType := nodes.TypeNat{Repr: "Nat"}
 		err := CheckType(ctx, v.N, &natType)
 
 		if err != nil {
@@ -61,9 +61,9 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			return nil, err
 		}
 
-		return &nodes.TypeBool{Repr: "bool"}, nil
+		return &nodes.TypeBool{Repr: "Bool"}, nil
 	case *nodes.NatRec:
-		natType := nodes.TypeNat{Repr: "nat"}
+		natType := nodes.TypeNat{Repr: "Nat"}
 		err := CheckType(ctx, v.N, &natType)
 
 		if err != nil {
@@ -364,7 +364,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		}
 
 		if _, ok := inferredType.(*nodes.TypeList); ok {
-			return &nodes.TypeBool{Repr: "bool"}, nil
+			return &nodes.TypeBool{Repr: "Bool"}, nil
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_NOT_A_LIST)
 			err.AddIfEmptyExpr(v.List)
