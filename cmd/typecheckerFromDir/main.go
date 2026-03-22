@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	astbuilder "typechecker/internal/ast/builder"
 	nodes "typechecker/internal/ast/nodes"
@@ -50,6 +51,17 @@ func dirExists(path string) (bool, error) {
 	return false, err // Other error (e.g., permission denied)
 }
 
+func fileExists(path string) (bool, error) {
+	info, err := os.Stat(path)
+	if err == nil {
+		return !info.IsDir(), nil // Check if it is a directory
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil // Path does not exist
+	}
+	return false, err // Other error (e.g., permission denied)
+}
+
 func getFiles(dirPath string) ([]string, error) {
 	testPaths := make([]string, 0)
 	err := filepath.WalkDir(dirPath, func(path string, d fs.DirEntry, err error) error {
@@ -82,21 +94,48 @@ func getTestPaths(dirPath string) ([]string, error) {
 
 func main() {
 	dirPathPtr := flag.String("dirPath", "", "Path to get tests from")
+	filePathPtr := flag.String("filePath", "", "Path to source code on stella")
 
 	flag.Parse()
 
-	if *dirPathPtr == "" {
-		fmt.Println("Expected dir path")
-	}
-
-	files, err := getTestPaths(*dirPathPtr)
-
-	if err != nil {
-		fmt.Println(err)
+	if *dirPathPtr == "" && *filePathPtr == "" {
+		var builder strings.Builder
+		builder.WriteString("Expected either dir or file path\n")
+		builder.WriteString("Usage:\n")
+		builder.WriteString("\t-dirPath string\n")
+		builder.WriteString("\t\tPath to get tests from\n")
+		builder.WriteString("\t-filePath string\n")
+		builder.WriteString("\t\tPath to source code on stella")
+		fmt.Println(builder.String())
 		return
 	}
 
-	for _, file := range files {
-		typecheck(file)
+	if *filePathPtr != "" {
+		exists, err := fileExists(*filePathPtr)
+
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		if !exists {
+			fmt.Printf("File does not exist: %s\n", *filePathPtr)
+			return
+		}
+
+		typecheck(*filePathPtr)
+	}
+
+	if *dirPathPtr != "" {
+		files, err := getTestPaths(*dirPathPtr)
+
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		for _, file := range files {
+			typecheck(file)
+		}
 	}
 }
