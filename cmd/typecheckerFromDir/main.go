@@ -26,7 +26,7 @@ func typecheck(filePath string) {
 	p := parser.NewstellaParser(stream)
 
 	tree := p.Start_Program()
-	builder := astbuilder.NewASTBuilder()
+	builder := astbuilder.NewASTBuilder(p)
 	builtAST := tree.Accept(builder).(nodes.AProgram)
 
 	err := typechecker.ParseProgram(builtAST)
@@ -62,7 +62,7 @@ func getFiles(dirPath string) ([]string, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("error walking the path %v: %v\n", dirPath, err))
+		return nil, fmt.Errorf("error walking the path %v: %v\n", dirPath, err)
 	}
 	return testPaths, nil
 }
