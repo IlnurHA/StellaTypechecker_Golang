@@ -1,6 +1,11 @@
 package ast
 
-import "github.com/neocotic/go-optional"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/neocotic/go-optional"
+)
 
 type RecordFieldType struct {
 	Label StellaIdent
@@ -139,23 +144,90 @@ func (x *TypeVar) isType()          {}
 func (x *TypeParens) isNode()       {}
 func (x *TypeParens) isType()       {}
 
-// String methods returning Repr
-func (x *RecordFieldType) String() string  { return x.Repr }
-func (x *VariantFieldType) String() string { return x.Repr }
-func (x *TypeBool) String() string         { return x.Repr }
-func (x *TypeNat) String() string          { return x.Repr }
-func (x *TypeRef) String() string          { return x.Repr }
-func (x *TypeSum) String() string          { return x.Repr }
-func (x *TypeFun) String() string          { return x.Repr }
-func (x *TypeForAll) String() string       { return x.Repr }
-func (x *TypeRec) String() string          { return x.Repr }
-func (x *TypeTuple) String() string        { return x.Repr }
-func (x *TypeRecord) String() string       { return x.Repr }
-func (x *TypeVariant) String() string      { return x.Repr }
-func (x *TypeList) String() string         { return x.Repr }
-func (x *TypeUnit) String() string         { return x.Repr }
-func (x *TypeTop) String() string          { return x.Repr }
-func (x *TypeBot) String() string          { return x.Repr }
-func (x *TypeAuto) String() string         { return x.Repr }
-func (x *TypeVar) String() string          { return x.Repr }
-func (x *TypeParens) String() string       { return x.Repr }
+func (field RecordFieldType) String() string {
+	return fmt.Sprintf("%s : %s", field.Label, field.Type_)
+}
+
+func (field VariantFieldType) String() string {
+	var builder strings.Builder
+
+	builder.WriteString(field.Label.String())
+
+	field.Type_.IfPresent(
+		func(value StellaType) {
+			fmt.Fprintf(&builder, " : %s", value.String())
+		},
+	)
+
+	return builder.String()
+}
+
+func (t TypeBool) String() string {
+	return "Bool"
+}
+
+func (t TypeNat) String() string {
+	return "Nat"
+}
+
+func (t TypeRef) String() string {
+	return fmt.Sprintf("&%s", t.Type_.String())
+}
+
+func (t TypeSum) String() string {
+	return fmt.Sprintf("%s+%s", t.Left.String(), t.Right.String())
+}
+
+func (t TypeFun) String() string {
+	params := ListToString(t.ParamTypes, ", ")
+	return fmt.Sprintf("fn(%s) -> %s", params, t.ReturnType.String())
+}
+
+func (t TypeForAll) String() string {
+	params := ListToString(t.Types, " ")
+	return fmt.Sprintf("forall %s.%s", params, t.Type_.String())
+}
+
+func (t TypeRec) String() string {
+	return fmt.Sprintf("µ %s.%s", t.Var_.String(), t.Type_.String())
+}
+
+func (t TypeTuple) String() string {
+	return fmt.Sprintf("{ %s }", ListToString(t.Types, ", "))
+}
+
+func (t TypeRecord) String() string {
+	return fmt.Sprintf("{ %s }", ListToString(t.FieldTypes, ", "))
+}
+
+func (t TypeVariant) String() string {
+	return fmt.Sprintf("<| %s |>", ListToString(t.FieldTypes, ", "))
+}
+
+func (t TypeList) String() string {
+	return fmt.Sprintf("[ %s ]", t.Type_)
+}
+
+func (t TypeUnit) String() string {
+	return "Unit"
+}
+
+func (t TypeTop) String() string {
+	return "Top"
+}
+
+func (t TypeBot) String() string {
+	return "Bot"
+}
+
+func (t TypeAuto) String() string {
+	return "auto"
+}
+
+func (t TypeVar) String() string {
+	return t.Name.String()
+}
+
+func (t TypeParens) String() string {
+	return fmt.Sprintf("(%s)", t.Type_)
+}
