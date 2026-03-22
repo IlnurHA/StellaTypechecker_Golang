@@ -34,7 +34,7 @@ func checkPatternType(pattern nodes.Pattern, expectedType nodes.StellaType) (err
 	case *nodes.PatternVariant:
 		if v, ok := expectedType.(*nodes.TypeVariant); ok {
 			for _, variantFieldType := range v.FieldTypes {
-				if variantFieldType.Label.Equal(p.Label) {
+				if variantFieldType.Label.Equal(&p.Label) {
 					if p.Pattern.IsEmpty() && variantFieldType.Type_.IsEmpty() {
 						return nil
 					} else if p.Pattern.IsPresent() && variantFieldType.Type_.IsPresent() {
@@ -103,7 +103,7 @@ func patternToContext(ctx *Context, pattern nodes.Pattern, expectedType nodes.St
 	case *nodes.PatternVariant:
 		if v, ok := expectedType.(*nodes.TypeVariant); ok {
 			for _, variantFieldType := range v.FieldTypes {
-				if variantFieldType.Label.Equal(p.Label) {
+				if variantFieldType.Label.Equal(&p.Label) {
 					if p.Pattern.IsEmpty() && variantFieldType.Type_.IsEmpty() {
 						return false
 					} else if p.Pattern.IsPresent() && variantFieldType.Type_.IsPresent() {

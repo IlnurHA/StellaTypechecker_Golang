@@ -348,14 +348,14 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 
 		tupleType, _ := inferredType.(*nodes.TypeTuple)
 
-		if v.Index >= len(tupleType.Types) {
+		if v.Index > len(tupleType.Types) || v.Index <= 0 {
 			err := NewTypeCheckErrorErrorType(ERROR_TUPLE_INDEX_OUT_OF_BOUNDS)
 			err.AddIfEmptyExpr(v)
 			err.AddAdditionalInfo(fmt.Sprintf("Actual length %d. Tried to access %d index", len(tupleType.Types), v.Index))
 			return &err
 		}
 
-		return CheckStellaType(tupleType.Types[v.Index], expectedType)
+		return CheckStellaType(tupleType.Types[v.Index-1], expectedType)
 
 	case *nodes.Record:
 		// ERROR_UNEXPECTED_RECORD
@@ -371,10 +371,12 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 
 		notFoundFields := make([]*nodes.StellaIdent, 0)
 		for _, expectedField := range recordType.FieldTypes {
+			// fmt.Printf("DEBUG: Expected Field: %s\n", &expectedField.Label)
 			isFound := false
 
 			for _, actualField := range v.Bindings {
-				if expectedField.Label.Equal(actualField.Name) {
+				// fmt.Printf("DEBUG: Actual Field: %s\n", &actualField.Name)
+				if expectedField.Label.Equal(&actualField.Name) {
 					isFound = true
 				}
 			}
@@ -411,7 +413,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 
 		for _, expectedFieldType := range recordType.FieldTypes {
 			for _, binding := range v.Bindings {
-				if binding.Name.Equal(expectedFieldType.Label) {
+				if binding.Name.Equal(&expectedFieldType.Label) {
 					err := CheckType(ctx, binding.Rhs, expectedFieldType.Type_)
 
 					if err != nil {
@@ -550,7 +552,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		variantType, _ := expectedType.(*nodes.TypeVariant)
 
 		for _, expectedVariantField := range variantType.FieldTypes {
-			if !expectedVariantField.Label.Equal(v.Label) {
+			if !expectedVariantField.Label.Equal(&v.Label) {
 				continue
 			}
 

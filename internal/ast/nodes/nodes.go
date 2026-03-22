@@ -42,12 +42,6 @@ func (x *LanguageDeclaration) String() string { return x.Repr }
 func (x *AProgram) String() string            { return x.Repr }
 
 // Eq
-func (x *StellaIdent) Equal(other interface{}) bool {
-	o, ok := other.(*StellaIdent)
-
-	if !ok {
-		return false
-	}
-
+func (x *StellaIdent) Equal(o *StellaIdent) bool {
 	return o.Name == x.Name
 }

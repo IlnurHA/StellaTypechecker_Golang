@@ -127,7 +127,7 @@ func CheckStellaType(actual nodes.StellaType, expected nodes.StellaType) (err *T
 			isFound := false
 
 			for _, ltField := range lt.FieldTypes {
-				if rtField.Label.Equal(ltField.Label) {
+				if rtField.Label.Equal(&ltField.Label) {
 					err := CheckStellaType(ltField.Type_, rtField.Type_)
 					if err != nil {
 						return err
@@ -166,7 +166,7 @@ func CheckStellaType(actual nodes.StellaType, expected nodes.StellaType) (err *T
 			isFound := false
 
 			for _, ltField := range lt.FieldTypes {
-				if rtField.Label.Equal(ltField.Label) {
+				if rtField.Label.Equal(&ltField.Label) {
 
 					if rtField.Type_.IsEmpty() && ltField.Type_.IsPresent() {
 						err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_DATA_FOR_NULLARY_LABEL)

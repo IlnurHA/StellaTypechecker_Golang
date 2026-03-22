@@ -172,14 +172,14 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 
 		tupleType, _ := inferredType.(*nodes.TypeTuple)
 
-		if v.Index >= len(tupleType.Types) {
+		if v.Index > len(tupleType.Types) || v.Index <= 0 {
 			err := NewTypeCheckErrorErrorType(ERROR_TUPLE_INDEX_OUT_OF_BOUNDS)
 			err.AddIfEmptyExpr(v)
 			err.AddAdditionalInfo(fmt.Sprintf("Actual length %d. Tried to access %d index", len(tupleType.Types), v.Index))
 			return nil, &err
 		}
 
-		return tupleType.Types[v.Index], nil
+		return tupleType.Types[v.Index-1], nil
 
 	case *nodes.Record:
 		recordFields := make(map[nodes.StellaIdent]bool, len(v.Bindings))
@@ -230,7 +230,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			}
 		}
 
-		err_ := NewTypeCheckErrorErrorType(ERROR_TUPLE_INDEX_OUT_OF_BOUNDS)
+		err_ := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_FIELD_ACCESS)
 		err_.AddIfEmptyExpr(v)
 		err_.AddAdditionalInfo(fmt.Sprintf("Unexpected label: %s", v.Label.String()))
 		return nil, &err_
