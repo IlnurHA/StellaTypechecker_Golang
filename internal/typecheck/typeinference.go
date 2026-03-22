@@ -8,11 +8,11 @@ import (
 func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 	switch v := node.(type) {
 	case *nodes.ConstUnit:
-		return &nodes.TypeUnit{Repr: "unit"}, nil
+		return &nodes.TypeUnit{}, nil
 	case *nodes.ConstBool:
-		return &nodes.TypeBool{Repr: "Bool"}, nil
+		return &nodes.TypeBool{}, nil
 	case *nodes.ConstInt:
-		return &nodes.TypeNat{Repr: "Nat"}, nil
+		return &nodes.TypeNat{}, nil
 	case *nodes.Var:
 		type_ := ctx.GetVarType(v.Name)
 
@@ -23,7 +23,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		}
 		return type_.Require(), nil
 	case *nodes.If:
-		err := CheckType(ctx, v.Condition, &nodes.TypeBool{Repr: "Bool"})
+		err := CheckType(ctx, v.Condition, &nodes.TypeBool{})
 
 		if err != nil {
 			return nil, err
@@ -43,7 +43,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 
 		return inferredType, nil
 	case *nodes.Succ:
-		natType := nodes.TypeNat{Repr: "Nat"}
+		natType := nodes.TypeNat{}
 		err := CheckType(ctx, v.N, &natType)
 
 		if err != nil {
@@ -53,7 +53,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 
 		return &natType, nil
 	case *nodes.IsZero:
-		natType := nodes.TypeNat{Repr: "Nat"}
+		natType := nodes.TypeNat{}
 		err := CheckType(ctx, v.N, &natType)
 
 		if err != nil {
@@ -61,9 +61,9 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			return nil, err
 		}
 
-		return &nodes.TypeBool{Repr: "Bool"}, nil
+		return &nodes.TypeBool{}, nil
 	case *nodes.NatRec:
-		natType := nodes.TypeNat{Repr: "Nat"}
+		natType := nodes.TypeNat{}
 		err := CheckType(ctx, v.N, &natType)
 
 		if err != nil {
@@ -104,7 +104,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			return nil, err
 		}
 
-		return &nodes.TypeFun{ParamTypes: paramTypes, ReturnType: inferredType, Repr: ""}, nil
+		return &nodes.TypeFun{ParamTypes: paramTypes, ReturnType: inferredType}, nil
 	case *nodes.Application:
 		inferredType, err := infer(ctx, v.Function)
 
@@ -203,7 +203,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 				return nil, err
 			}
 
-			recordTypes[index] = nodes.RecordFieldType{Label: binding.Name, Type_: inferredType, Repr: ""}
+			recordTypes[index] = nodes.RecordFieldType{Label: binding.Name, Type_: inferredType}
 		}
 
 		return &nodes.TypeRecord{FieldTypes: recordTypes}, nil
@@ -283,7 +283,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			}
 		}
 
-		return &nodes.TypeList{Type_: inferredType, Repr: ""}, nil
+		return &nodes.TypeList{Type_: inferredType}, nil
 	case *nodes.ConsList:
 		headType, err := infer(ctx, v.Head)
 
@@ -318,7 +318,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			return listType, nil
 		}
 
-		listType := nodes.TypeList{Type_: headType, Repr: ""}
+		listType := nodes.TypeList{Type_: headType}
 		err = CheckType(ctx, v.Tail, &listType)
 
 		if err != nil {
@@ -364,7 +364,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		}
 
 		if _, ok := inferredType.(*nodes.TypeList); ok {
-			return &nodes.TypeBool{Repr: "Bool"}, nil
+			return &nodes.TypeBool{}, nil
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_NOT_A_LIST)
 			err.AddIfEmptyExpr(v.List)
@@ -391,7 +391,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 				return nil, &err_
 			}
 
-			if IsEqualType(listType.ParamTypes[0], listType.ReturnType) {
+			if !IsEqualType(listType.ParamTypes[0], listType.ReturnType) {
 				var expectedFunType = nodes.TypeFun{ParamTypes: listType.ParamTypes, ReturnType: listType.ParamTypes[0]}
 
 				err_ := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_TYPE_FOR_EXPRESSION)
@@ -487,7 +487,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		return infer(ctx, v.Body)
 
 	case *nodes.Sequence:
-		err := CheckType(ctx, v.Expr1, &nodes.TypeUnit{Repr: "unit"})
+		err := CheckType(ctx, v.Expr1, &nodes.TypeUnit{})
 
 		if err != nil {
 			return nil, err

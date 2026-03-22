@@ -31,7 +31,7 @@ func constructTypeFromDeclaration(declaration *nodes.Declaration) (nodes.StellaT
 	switch v := declarationCheck.(type) {
 	case *nodes.FunctionDeclaration:
 		paramTypes := make([]nodes.StellaType, len(v.Params))
-		returnType := v.ReturnType.OrElse(&nodes.TypeUnit{Repr: "unit"})
+		returnType := v.ReturnType.OrElse(&nodes.TypeUnit{})
 
 		for index, param := range v.Params {
 			err := checkTypeConsistency(param.ParameterType)
@@ -49,7 +49,7 @@ func constructTypeFromDeclaration(declaration *nodes.Declaration) (nodes.StellaT
 			return nil, err
 		}
 
-		return &nodes.TypeFun{ParamTypes: paramTypes, ReturnType: returnType, Repr: ""}, nil
+		return &nodes.TypeFun{ParamTypes: paramTypes, ReturnType: returnType}, nil
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
 		err.AddIfEmptyExpr(*declaration)

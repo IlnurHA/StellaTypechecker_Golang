@@ -155,7 +155,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		// body scope
 		ctx.AddNewScope()
 
-		err = CheckType(ctx, v.Expr, v.ReturnType.OrElse(&nodes.TypeUnit{Repr: "unit"}))
+		err = CheckType(ctx, v.Expr, v.ReturnType.OrElse(&nodes.TypeUnit{}))
 
 		if err != nil {
 			return err
@@ -163,11 +163,11 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 
 		return nil
 	case *nodes.ConstUnit:
-		return CheckStellaType(&nodes.TypeUnit{Repr: "unit"}, expectedType)
+		return CheckStellaType(&nodes.TypeUnit{}, expectedType)
 	case *nodes.ConstBool:
-		return CheckStellaType(&nodes.TypeBool{Repr: "Bool"}, expectedType)
+		return CheckStellaType(&nodes.TypeBool{}, expectedType)
 	case *nodes.ConstInt:
-		return CheckStellaType(&nodes.TypeNat{Repr: "Nat"}, expectedType)
+		return CheckStellaType(&nodes.TypeNat{}, expectedType)
 	case *nodes.Var:
 		// println("Expr:", v.Name.Name)
 		type_ := ctx.GetVarType(v.Name)
@@ -176,10 +176,9 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 			var err = NewTypeCheckErrorErrorType(ERROR_UNDEFINED_VARIABLE)
 			return &err
 		}
-
 		return CheckStellaType(type_.Require(), expectedType)
 	case *nodes.If:
-		err := CheckType(ctx, v.Condition, &nodes.TypeBool{Repr: "Bool"})
+		err := CheckType(ctx, v.Condition, &nodes.TypeBool{})
 
 		if err != nil {
 			return err
@@ -193,7 +192,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 
 		return CheckType(ctx, v.ElseExpr, expectedType)
 	case *nodes.Succ:
-		natType := nodes.TypeNat{Repr: "Nat"}
+		natType := nodes.TypeNat{}
 
 		err := CheckStellaType(&natType, expectedType)
 
@@ -203,9 +202,9 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 
 		return CheckType(ctx, v.N, &natType)
 	case *nodes.IsZero:
-		natType := nodes.TypeNat{Repr: "Nat"}
+		natType := nodes.TypeNat{}
 
-		err := CheckStellaType(&nodes.TypeBool{Repr: "Bool"}, expectedType)
+		err := CheckStellaType(&nodes.TypeBool{}, expectedType)
 
 		if err != nil {
 			return err
@@ -213,7 +212,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 
 		return CheckType(ctx, v.N, &natType)
 	case *nodes.NatRec:
-		natType := nodes.TypeNat{Repr: "Nat"}
+		natType := nodes.TypeNat{}
 		err := CheckType(ctx, v.N, &natType)
 
 		if err != nil {
@@ -515,7 +514,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 
 		return CheckType(ctx, v.Tail, listType.Type_)
 	case *nodes.Head:
-		listType := nodes.TypeList{Type_: expectedType, Repr: ""}
+		listType := nodes.TypeList{Type_: expectedType}
 		return CheckType(ctx, v.List, &listType)
 	case *nodes.Tail:
 		// ERROR_UNEXPECTED_LIST
@@ -533,7 +532,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		}
 
 		if _, ok := inferredType.(*nodes.TypeList); ok {
-			return CheckStellaType(&nodes.TypeBool{Repr: "Bool"}, expectedType)
+			return CheckStellaType(&nodes.TypeBool{}, expectedType)
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_NOT_A_LIST)
 			err.AddIfEmptyExpr(v.List)
@@ -630,7 +629,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		return CheckType(ctx, v.Body, expectedType)
 
 	case *nodes.Sequence:
-		err := CheckType(ctx, v.Expr1, &nodes.TypeUnit{Repr: "unit"})
+		err := CheckType(ctx, v.Expr1, &nodes.TypeUnit{})
 
 		if err != nil {
 			return err

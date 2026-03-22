@@ -97,7 +97,7 @@ func parseRecordFieldType(typeCtx parser.IRecordFieldTypeContext, v *ASTBuilder)
 	label := parseStellaIdent(typeCtx.GetLabel())
 	type_ := parseType(typeCtx.GetType_(), v)
 
-	return nodes.RecordFieldType{Label: label, Type_: type_, Repr: typeCtx.GetText()}
+	return nodes.RecordFieldType{Label: label, Type_: type_}
 }
 
 func parseListOfRecordFieldType(typesCtx []parser.IRecordFieldTypeContext, v *ASTBuilder) []nodes.RecordFieldType {
@@ -113,7 +113,7 @@ func parseVariantFieldType(typeCtx parser.IVariantFieldTypeContext, v *ASTBuilde
 		type_ = optional.Of(parseType(typeCtx.GetType_(), v))
 	}
 
-	return nodes.VariantFieldType{Label: label, Type_: type_, Repr: typeCtx.GetText()}
+	return nodes.VariantFieldType{Label: label, Type_: type_}
 }
 
 func parseListOfVariantFieldType(typesCtx []parser.IVariantFieldTypeContext, v *ASTBuilder) []nodes.VariantFieldType {

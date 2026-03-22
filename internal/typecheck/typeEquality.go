@@ -12,7 +12,7 @@ func CheckStellaType(actual nodes.StellaType, expected nodes.StellaType) (err *T
 			err.OverwriteExpectedType(expected)
 		}
 	}()
-
+	// fmt.Printf("DEBUG: Checking actual %T against expected %T\n", actual, expected)
 	switch lt := actual.(type) {
 	case *nodes.TypeBool:
 		_, ok := expected.(*nodes.TypeBool)
@@ -77,8 +77,14 @@ func CheckStellaType(actual nodes.StellaType, expected nodes.StellaType) (err *T
 	case *nodes.TypeFun:
 		rt, ok := expected.(*nodes.TypeFun)
 
-		if !ok || len(rt.ParamTypes) != len(lt.ParamTypes) {
+		if !ok {
 			err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_TYPE_FOR_EXPRESSION)
+			return &err
+		}
+
+		if len(rt.ParamTypes) != len(lt.ParamTypes) {
+			err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_TYPE_FOR_EXPRESSION)
+			err.AddAdditionalInfo(fmt.Sprintf("Expected %d params. Got %d", len(rt.ParamTypes), len(lt.ParamTypes)))
 			return &err
 		}
 
