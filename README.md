@@ -52,3 +52,9 @@ in function: main
 >    `-dirPath` **string** Path to get tests from
 >
 >    `-filePath` **string** Path to source code on stella
+
+## Tests
+
+If you are looking for tests you can find them here: https://github.com/ThatDraenGuy/stella_test_suite
+
+Thanks @ThatDraenGuy for the repository
