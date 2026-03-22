@@ -262,15 +262,18 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 	case *nodes.Inl:
 		err := NewTypeCheckErrorErrorType(ERROR_AMBIGUOUS_SUM_TYPE)
 		err.AddIfEmptyExpr(v)
+		err.Freeze()
 		return nil, &err
 	case *nodes.Inr:
 		err := NewTypeCheckErrorErrorType(ERROR_AMBIGUOUS_SUM_TYPE)
 		err.AddIfEmptyExpr(v)
+		err.Freeze()
 		return nil, &err
 	case *nodes.List:
 		if len(v.Exprs) == 0 {
 			err := NewTypeCheckErrorErrorType(ERROR_AMBIGUOUS_LIST)
 			err.AddIfEmptyExpr(v)
+			err.Freeze()
 			return nil, &err
 		}
 
@@ -393,6 +396,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 	case *nodes.Variant:
 		err := NewTypeCheckErrorErrorType(ERROR_AMBIGUOUS_VARIANT_TYPE)
 		err.AddIfEmptyExpr(v)
+		err.Freeze()
 		return nil, &err
 	case *nodes.Fix:
 		inferredType, err := infer(ctx, v.Expr_)
