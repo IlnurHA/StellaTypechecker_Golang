@@ -85,7 +85,7 @@ func parseListOfPattern(patternsCtx []parser.IPatternContext, v *ASTBuilder) []n
 
 func parseLabelledPattern(patternCtx parser.ILabelledPatternContext, v *ASTBuilder) nodes.LabelledPattern {
 	label := parseStellaIdent(patternCtx.GetLabel())
-	pattern := v.Visit(patternCtx.GetPattern_()).(nodes.Pattern)
+	pattern := patternCtx.GetPattern_().Accept(v).(nodes.Pattern)
 	return nodes.LabelledPattern{Label: label, Pattern: pattern, Repr: patternCtx.GetText()}
 }
 
@@ -189,4 +189,19 @@ func map_[T, V any](ctx []T, f func(T) V) []V {
 		list[index] = f(subctx)
 	}
 	return list
+}
+
+func getOriginalCode(ctx antlr.ParserRuleContext, v *ASTBuilder) string {
+	start := ctx.GetStart()
+	stop := ctx.GetStop()
+	if start != nil && stop != nil {
+		// Get the token stream from the parser
+		tokens := v.parser.GetTokenStream().(*antlr.CommonTokenStream)
+		original := tokens.GetTextFromInterval(antlr.Interval{
+			Start: start.GetTokenIndex(),
+			Stop:  stop.GetTokenIndex(),
+		})
+		return original
+	}
+	return ctx.GetText()
 }

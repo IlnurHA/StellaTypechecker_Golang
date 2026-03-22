@@ -19,7 +19,7 @@ func (v *ASTBuilder) VisitPatternVariant(ctx *parser.PatternVariantContext) inte
 	return &nodes.PatternVariant{
 		Label:   label,
 		Pattern: pattern,
-		Repr:    ctx.GetText(),
+		Repr:    getOriginalCode(ctx, v),
 	}
 }
 
@@ -28,7 +28,7 @@ func (v *ASTBuilder) VisitPatternInl(ctx *parser.PatternInlContext) interface{} 
 
 	return &nodes.PatternInl{
 		Pattern: pattern,
-		Repr:    ctx.GetText(),
+		Repr:    getOriginalCode(ctx, v),
 	}
 }
 
@@ -37,7 +37,7 @@ func (v *ASTBuilder) VisitPatternInr(ctx *parser.PatternInrContext) interface{} 
 
 	return &nodes.PatternInr{
 		Pattern: pattern,
-		Repr:    ctx.GetText(),
+		Repr:    getOriginalCode(ctx, v),
 	}
 }
 
@@ -45,7 +45,7 @@ func (v *ASTBuilder) VisitPatternTuple(ctx *parser.PatternTupleContext) interfac
 	patterns := parseListOfPattern(ctx.GetPatterns(), v)
 	return &nodes.PatternTuple{
 		Patterns: patterns,
-		Repr:     ctx.GetText(),
+		Repr:     getOriginalCode(ctx, v),
 	}
 }
 
@@ -53,7 +53,7 @@ func (v *ASTBuilder) VisitPatternRecord(ctx *parser.PatternRecordContext) interf
 	patterns := parseListOfLabelledPattern(ctx.GetPatterns(), v)
 	return &nodes.PatternRecord{
 		Patterns: patterns,
-		Repr:     ctx.GetText(),
+		Repr:     getOriginalCode(ctx, v),
 	}
 }
 
@@ -61,7 +61,7 @@ func (v *ASTBuilder) VisitPatternList(ctx *parser.PatternListContext) interface{
 	patterns := parseListOfPattern(ctx.GetPatterns(), v)
 	return &nodes.PatternList{
 		Patterns: patterns,
-		Repr:     ctx.GetText(),
+		Repr:     getOriginalCode(ctx, v),
 	}
 }
 
@@ -72,25 +72,25 @@ func (v *ASTBuilder) VisitPatternCons(ctx *parser.PatternConsContext) interface{
 	return &nodes.PatternCons{
 		Head: head,
 		Tail: tail,
-		Repr: ctx.GetText(),
+		Repr: getOriginalCode(ctx, v),
 	}
 }
 
 func (v *ASTBuilder) VisitPatternTrue(ctx *parser.PatternTrueContext) interface{} {
 	return &nodes.PatternTrue{
-		Repr: ctx.GetText(),
+		Repr: getOriginalCode(ctx, v),
 	}
 }
 
 func (v *ASTBuilder) VisitPatternFalse(ctx *parser.PatternFalseContext) interface{} {
 	return &nodes.PatternFalse{
-		Repr: ctx.GetText(),
+		Repr: getOriginalCode(ctx, v),
 	}
 }
 
 func (v *ASTBuilder) VisitPatternUnit(ctx *parser.PatternUnitContext) interface{} {
 	return &nodes.PatternUnit{
-		Repr: ctx.GetText(),
+		Repr: getOriginalCode(ctx, v),
 	}
 }
 
@@ -98,7 +98,7 @@ func (v *ASTBuilder) VisitPatternInt(ctx *parser.PatternIntContext) interface{} 
 	res, _ := strconv.Atoi(ctx.GetN().GetText())
 	return &nodes.PatternInt{
 		N:    res,
-		Repr: ctx.GetText(),
+		Repr: getOriginalCode(ctx, v),
 	}
 }
 
@@ -106,7 +106,7 @@ func (v *ASTBuilder) VisitPatternSucc(ctx *parser.PatternSuccContext) interface{
 	pattern := parsePattern(ctx.GetPattern_(), v)
 	return &nodes.PatternSucc{
 		Pattern: pattern,
-		Repr:    ctx.GetText(),
+		Repr:    getOriginalCode(ctx, v),
 	}
 }
 
@@ -114,7 +114,7 @@ func (v *ASTBuilder) VisitPatternVar(ctx *parser.PatternVarContext) interface{} 
 	name := parseStellaIdent(ctx.GetName())
 	return &nodes.PatternVar{
 		Name: name,
-		Repr: ctx.GetText(),
+		Repr: getOriginalCode(ctx, v),
 	}
 }
 
@@ -124,7 +124,7 @@ func (v *ASTBuilder) VisitPatternAsc(ctx *parser.PatternAscContext) interface{} 
 	return &nodes.PatternAsc{
 		Pattern: pattern,
 		Type_:   type_,
-		Repr:    ctx.GetText(),
+		Repr:    getOriginalCode(ctx, v),
 	}
 }
 
@@ -134,7 +134,7 @@ func (v *ASTBuilder) VisitPatternCastAs(ctx *parser.PatternCastAsContext) interf
 	return &nodes.PatternCastAs{
 		Pattern: pattern,
 		Type_:   type_,
-		Repr:    ctx.GetText(),
+		Repr:    getOriginalCode(ctx, v),
 	}
 }
 
@@ -142,6 +142,6 @@ func (v *ASTBuilder) VisitParenthesisedPattern(ctx *parser.ParenthesisedPatternC
 	pattern := parsePattern(ctx.GetPattern_(), v)
 	return &nodes.ParenthesisedPattern{
 		Pattern: pattern,
-		Repr:    ctx.GetText(),
+		Repr:    getOriginalCode(ctx, v),
 	}
 }

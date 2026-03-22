@@ -30,8 +30,8 @@ func ParseProgram(node nodes.AProgram) *TypecheckError {
 
 			if !success {
 				var typeError = NewTypeCheckErrorErrorType(ERROR_DUPLICATE_FUNCTION_DECLARATION)
-				typeError.AddIfEmptyFunctionName(nameStella)
-				typeError.AddIfEmptyExpr(&node)
+				typeError.AddAdditionalInfo(fmt.Sprintf("Duplicated function name: %s", &nameStella))
+				// typeError.AddIfEmptyExpr(&node)
 				return &typeError
 			}
 
@@ -103,6 +103,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 
 		err := addParametersToContext(ctx, v.Params)
 		if err != nil {
+			err.AddIfEmptyExpr(v)
 			return err
 		}
 
@@ -126,7 +127,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 				if !success {
 					err := NewTypeCheckErrorErrorType(ERROR_DUPLICATE_FUNCTION_DECLARATION)
 					err.AddIfEmptyFunctionName(v.Name)
-					err.AddIfEmptyExpr(decl)
+					// err.AddIfEmptyExpr(decl)
 					return &err
 				}
 			default:
@@ -174,6 +175,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 
 		if type_.IsEmpty() {
 			var err = NewTypeCheckErrorErrorType(ERROR_UNDEFINED_VARIABLE)
+			err.AddAdditionalInfo(fmt.Sprintf("Undefined variable: %s", v.String()))
 			return &err
 		}
 		return CheckStellaType(type_.Require(), expectedType)
@@ -254,6 +256,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 
 			if err != nil {
 				err.RewriteErrorType(ERROR_UNEXPECTED_TYPE_FOR_PARAMETER)
+				err.AddAdditionalInfo(fmt.Sprintf("Unexpected type for parameter: %s", &paramPair.First.Name))
 				return err
 			}
 		}
@@ -264,6 +267,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		err := addParametersToContext(ctx, v.Params)
 
 		if err != nil {
+			err.AddIfEmptyExpr(v)
 			return err
 		}
 
@@ -278,8 +282,10 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		if _, ok := inferredType.(*nodes.TypeFun); ok {
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_NOT_A_FUNCTION)
-			err.AddIfEmptyExpr(v.Function)
+			err.AddAdditionalInfo(fmt.Sprintf("Expression %s is not a function", v.Function))
+			err.AddIfEmptyExpr(v)
 			err.AddIfEmptyActualType(inferredType)
+			err.Freeze()
 			return &err
 		}
 
@@ -289,6 +295,8 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 			err := NewTypeCheckErrorErrorType(ERROR_INCORRECT_NUMBER_OF_ARGUMENTS)
 			err.AddIfEmptyActualType(inferredFunType)
 			err.AddAdditionalInfo(fmt.Sprintf("Expected %d. Got %d", len(inferredFunType.ParamTypes), len(v.Args)))
+			err.AddIfEmptyExpr(v)
+			err.Freeze()
 			return &err
 		}
 
@@ -318,7 +326,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		if len(tupleType.Types) != len(v.Exprs) {
 			err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_TUPLE_LENGTH)
 			err.AddIfEmptyExpectedType(expectedType)
-			err.AddAdditionalInfo(fmt.Sprintf("Expected %d. Got %d", len(tupleType.Types), len(v.Exprs)))
+			err.AddAdditionalInfo(fmt.Sprintf("Expected tuple of length %d. Got %d", len(tupleType.Types), len(v.Exprs)))
 			return &err
 		}
 
@@ -341,8 +349,10 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		if _, ok := inferredType.(*nodes.TypeTuple); ok {
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_NOT_A_TUPLE)
-			err.AddIfEmptyExpr(v.Subexpr)
+			err.AddAdditionalInfo(fmt.Sprintf("Expression %s is not a tuple", v.Subexpr))
+			err.AddIfEmptyExpr(v)
 			err.AddIfEmptyActualType(inferredType)
+			err.Freeze()
 			return &err
 		}
 
@@ -352,6 +362,8 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 			err := NewTypeCheckErrorErrorType(ERROR_TUPLE_INDEX_OUT_OF_BOUNDS)
 			err.AddIfEmptyExpr(v)
 			err.AddAdditionalInfo(fmt.Sprintf("Actual length %d. Tried to access %d index", len(tupleType.Types), v.Index))
+			err.AddIfEmptyActualType(tupleType)
+			err.Freeze()
 			return &err
 		}
 
@@ -406,8 +418,23 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 
 		// ERROR_UNEXPECTED_RECORD_FIELDS
 		if len(recordType.FieldTypes) < len(v.Bindings) {
-			// TODO collect unexpected fields
+			unexpectedFields := make([]*nodes.StellaIdent, 0)
+			for _, label := range v.Bindings {
+				isFound := false
+
+				for _, expectedLabel := range recordType.FieldTypes {
+					if expectedLabel.Label.Equal(&label.Name) {
+						isFound = true
+						break
+					}
+				}
+				if !isFound {
+					unexpectedFields = append(unexpectedFields, &label.Name)
+				}
+			}
+
 			err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_RECORD_FIELDS)
+			err.AddAdditionalInfo(fmt.Sprintf("Unexpected fields: %s", showList(unexpectedFields)))
 			return &err
 		}
 
@@ -434,8 +461,10 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		if _, ok := inferredType.(*nodes.TypeRecord); ok {
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_NOT_A_RECORD)
-			err.AddIfEmptyExpr(v.Subexpr)
+			err.AddAdditionalInfo(fmt.Sprintf("Expression %s is not a record", v.Subexpr))
+			err.AddIfEmptyExpr(v)
 			err.AddIfEmptyActualType(inferredType)
+			err.Freeze()
 			return &err
 		}
 
@@ -449,7 +478,8 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 
 		err_ := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_FIELD_ACCESS)
 		err_.AddIfEmptyExpr(v)
-		err_.AddAdditionalInfo(fmt.Sprintf("Unexpected label: %s", v.Label.String()))
+		err_.AddAdditionalInfo(fmt.Sprintf("Unexpected label \"%s\" for record of type %s", v.Label.String(), recordType))
+		err_.Freeze()
 		return &err_
 	case *nodes.TypeAsc:
 		if err := checkTypeConsistency(v.Type_); err != nil {
@@ -537,8 +567,10 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 			return CheckStellaType(&nodes.TypeBool{}, expectedType)
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_NOT_A_LIST)
-			err.AddIfEmptyExpr(v.List)
+			err.AddAdditionalInfo(fmt.Sprintf("Expression %s is not a list", v.List))
+			err.AddIfEmptyExpr(v)
 			err.AddIfEmptyActualType(inferredType)
+			err.Freeze()
 			return &err
 		}
 	case *nodes.Variant:
@@ -546,6 +578,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		if _, ok := expectedType.(*nodes.TypeVariant); ok {
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_VARIANT)
+			err.AddAdditionalInfo(fmt.Sprintf("Expected %s. Got variant type", expectedType))
 			return &err
 		}
 
@@ -598,6 +631,8 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 
 		err = checkExhaustiveness(v.Cases, inferredType)
 		if err != nil {
+			err.AddIfEmptyExpr(v)
+			err.Freeze()
 			return err
 		}
 

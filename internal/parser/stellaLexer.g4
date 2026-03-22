@@ -105,7 +105,7 @@ MemoryAddress: '<0x' (DIGIT|[A-F]|[a-f])+ '>';
 INTEGER : DIGIT+;
 
 // Whitespace
-WS : (' ' | '\r' | '\t' | '\n' | '\f')+ ->  skip;
+WS : (' ' | '\r' | '\t' | '\n' | '\f')+ ->  channel(HIDDEN);
 // Escapable sequences
 fragment
 Escapable : ('"' | '\\' | 'n' | 't' | 'r' | 'f');

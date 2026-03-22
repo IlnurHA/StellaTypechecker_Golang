@@ -149,7 +149,24 @@ func CheckStellaType(actual nodes.StellaType, expected nodes.StellaType) (err *T
 		}
 
 		if len(rt.FieldTypes) < len(lt.FieldTypes) {
+
+			unexpectedFields := make([]*nodes.StellaIdent, 0)
+			for _, label := range lt.FieldTypes {
+				isFound := false
+
+				for _, expectedLabel := range rt.FieldTypes {
+					if expectedLabel.Label.Equal(&label.Label) {
+						isFound = true
+						break
+					}
+				}
+				if !isFound {
+					unexpectedFields = append(unexpectedFields, &label.Label)
+				}
+			}
+
 			err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_RECORD_FIELDS)
+			err.AddAdditionalInfo(fmt.Sprintf("Unexpected fields: %s", showList(unexpectedFields)))
 			return &err
 		}
 

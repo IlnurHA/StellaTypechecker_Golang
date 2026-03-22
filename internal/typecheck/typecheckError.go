@@ -19,6 +19,7 @@ type TypecheckError struct {
 	functionName optional.Optional[nodes.StellaIdent]
 
 	additionalInfo optional.Optional[string]
+	freezed        bool
 }
 
 func NewTypeCheckErrorFull(
@@ -42,6 +43,7 @@ func NewTypeCheckErrorFull(
 		functionName: functionName,
 
 		additionalInfo: additionalInfo,
+		freezed:        false,
 	}
 }
 
@@ -57,6 +59,7 @@ func NewTypeCheckErrorErrorType(
 		expr:           optional.Empty[nodes.Node](),
 		functionName:   optional.Empty[nodes.StellaIdent](),
 		additionalInfo: optional.Empty[string](),
+		freezed:        false,
 	}
 }
 
@@ -67,25 +70,25 @@ func (err *TypecheckError) IsAmbiguousError() bool {
 }
 
 func (err *TypecheckError) AddIfEmptyActualType(actualType nodes.StellaType) {
-	if err.actualType.IsEmpty() {
+	if err.actualType.IsEmpty() && !err.freezed {
 		err.actualType = optional.Of(actualType)
 	}
 }
 
 func (err *TypecheckError) AddIfEmptyExpectedType(expectedType nodes.StellaType) {
-	if err.expectedType.IsEmpty() {
+	if err.expectedType.IsEmpty() && !err.freezed {
 		err.expectedType = optional.Of(expectedType)
 	}
 }
 
 func (err *TypecheckError) AddIfEmptyPattern(pattern nodes.Pattern) {
-	if err.pattern.IsEmpty() {
+	if err.pattern.IsEmpty() && !err.freezed {
 		err.pattern = optional.Of(pattern)
 	}
 }
 
 func (err *TypecheckError) AddIfEmptyExpr(expr nodes.Node) {
-	if err.expr.IsEmpty() {
+	if err.expr.IsEmpty() && !err.freezed {
 		err.expr = optional.Of(expr)
 	}
 }
@@ -116,6 +119,10 @@ func (err *TypecheckError) OverwritePattern(pattern nodes.Pattern) {
 	err.pattern = optional.Of(pattern)
 }
 
+func (err *TypecheckError) Freeze() {
+	err.freezed = true
+}
+
 const (
 	errorType        = "Type Error: %s\n"
 	errorDescription = "%s\n"
@@ -124,14 +131,18 @@ const (
 	inPattern        = "in pattern: %s\n"
 	inExpr           = "in expression: %s\n"
 	inFunction       = "in function: %s\n"
-	additionalInfo   = "Additional info:\n%s\n"
+	additionalInfo   = "%s"
 )
 
 func (err *TypecheckError) String() string {
 	var builder strings.Builder
 
 	fmt.Fprintf(&builder, errorType, err.errorType.String())
-	fmt.Fprintf(&builder, errorDescription, "<TODO: ErrorDescription>")
+
+	if err.additionalInfo.IsPresent() {
+		var info = err.additionalInfo.Require()
+		fmt.Fprintf(&builder, additionalInfo, info)
+	}
 
 	if err.expectedType.IsPresent() {
 		var node = err.expectedType.Require()
@@ -156,11 +167,6 @@ func (err *TypecheckError) String() string {
 	if err.functionName.IsPresent() {
 		var node = err.functionName.Require()
 		fmt.Fprintf(&builder, inFunction, node.String())
-	}
-
-	if err.additionalInfo.IsPresent() {
-		var info = err.additionalInfo.Require()
-		fmt.Fprintf(&builder, additionalInfo, info)
 	}
 
 	return builder.String()

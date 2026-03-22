@@ -2,6 +2,7 @@ package typecheck
 
 import (
 	"fmt"
+	"reflect"
 	nodes "typechecker/internal/ast/nodes"
 )
 
@@ -150,11 +151,11 @@ func checkExhaustivenessHelper(patterns []nodes.Pattern, expectedType nodes.Stel
 		usedLabels := make(map[nodes.StellaIdent]bool, len(v.FieldTypes))
 
 		for _, pattern := range patterns {
-			if _, ok := pattern.(*nodes.PatternVar); ok {
+			if _, ok := checkForPattern[*nodes.PatternVar](pattern); ok {
 				return nil
 			}
 
-			variantPattern, _ := pattern.(*nodes.PatternVariant)
+			variantPattern, _ := checkForPattern[*nodes.PatternVariant](pattern)
 
 			usedLabels[variantPattern.Label] = true
 		}
@@ -185,13 +186,13 @@ func checkExhaustivenessHelper(patterns []nodes.Pattern, expectedType nodes.Stel
 		usedInr := false
 
 		for _, pattern := range patterns {
-			if _, ok := pattern.(*nodes.PatternVar); ok {
+			if _, ok := checkForPattern[*nodes.PatternVar](pattern); ok {
 				return nil
 			}
 
-			if _, ok := pattern.(*nodes.PatternInl); ok {
+			if _, ok := checkForPattern[*nodes.PatternInl](pattern); ok {
 				usedInl = true
-			} else {
+			} else if _, ok := checkForPattern[*nodes.PatternInr](pattern); ok {
 				usedInr = true
 			}
 		}
@@ -212,6 +213,56 @@ func checkExhaustivenessHelper(patterns []nodes.Pattern, expectedType nodes.Stel
 		return checkExhaustivenessHelper(inrPatterns, v.Right)
 	case *nodes.TypeVar:
 		return nil
+	case *nodes.TypeNat:
+		for _, pattern := range patterns {
+			if _, ok := checkForPattern[*nodes.PatternVar](pattern); ok {
+				return nil
+			}
+		}
+		err := NewTypeCheckErrorErrorType(ERROR_NONEXHAUSTIVE_MATCH_PATTERNS)
+		return &err
+	case *nodes.TypeBool:
+		usedFalse, usedTrue := false, false
+
+		for _, pattern := range patterns {
+			// println(pattern.String())
+			if _, ok := checkForPattern[*nodes.PatternVar](pattern); ok {
+				return nil
+			}
+
+			if _, ok := checkForPattern[*nodes.PatternTrue](pattern); ok {
+				usedTrue = true
+			}
+
+			if _, ok := checkForPattern[*nodes.PatternFalse](pattern); ok {
+				usedFalse = true
+			}
+		}
+
+		if usedTrue && usedFalse {
+			return nil
+		}
+
+		err := NewTypeCheckErrorErrorType(ERROR_NONEXHAUSTIVE_MATCH_PATTERNS)
+		return &err
+	case *nodes.TypeUnit:
+		for _, pattern := range patterns {
+			if _, ok := checkForPattern[*nodes.PatternVar](pattern); ok {
+				return nil
+			}
+
+			if _, ok := checkForPattern[*nodes.PatternUnit](pattern); ok {
+				return nil
+			}
+		}
+		err := NewTypeCheckErrorErrorType(ERROR_NONEXHAUSTIVE_MATCH_PATTERNS)
+		return &err
+	default:
+		for _, pattern := range patterns {
+			if _, ok := checkForPattern[*nodes.PatternVar](pattern); ok {
+				return nil
+			}
+		}
 	}
 
 	err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
@@ -223,11 +274,16 @@ func splitPatternsVariant(patterns []nodes.Pattern) map[nodes.StellaIdent][]node
 	variants := make(map[nodes.StellaIdent][]nodes.Pattern)
 
 	for _, pattern := range patterns {
-		variantPattern, _ := pattern.(*nodes.PatternVariant)
+		variantPattern, _ := checkForPattern[*nodes.PatternVariant](pattern)
+
+		if variantPattern.Pattern.IsEmpty() {
+			continue
+		}
+
 		if v, ok := variants[variantPattern.Label]; ok {
-			variants[variantPattern.Label] = append(v, pattern)
+			variants[variantPattern.Label] = append(v, variantPattern.Pattern.Require())
 		} else {
-			variants[variantPattern.Label] = append(make([]nodes.Pattern, 1), pattern)
+			variants[variantPattern.Label] = append(make([]nodes.Pattern, 0), variantPattern.Pattern.Require())
 		}
 	}
 	return variants
@@ -238,12 +294,25 @@ func splitPatternsSum(patterns []nodes.Pattern) ([]nodes.Pattern, []nodes.Patter
 	inrPatterns := make([]nodes.Pattern, 0)
 
 	for _, pattern := range patterns {
-		if _, ok := pattern.(*nodes.PatternInl); ok {
-			inlPatterns = append(inlPatterns, pattern)
-		} else {
-			inrPatterns = append(inrPatterns, pattern)
+		if inlPattern, ok := checkForPattern[*nodes.PatternInl](pattern); ok {
+			inlPatterns = append(inlPatterns, inlPattern.Pattern)
+		} else if inrPattern, ok := checkForPattern[*nodes.PatternInr](pattern); ok {
+			inrPatterns = append(inrPatterns, inrPattern.Pattern)
 		}
 	}
 
 	return inlPatterns, inrPatterns
+}
+
+func checkForPattern[T nodes.Pattern](pattern nodes.Pattern) (T, bool) {
+	// Check if pattern (or subpattern for patterns that describe inner pattern) is the same
+	switch v := pattern.(type) {
+	case *nodes.PatternAsc:
+		return checkForPattern[T](v.Pattern)
+	case *nodes.ParenthesisedPattern:
+		return checkForPattern[T](v.Pattern)
+	default:
+		fmt.Printf("trying to reflect %s with value of %s \n", pattern, reflect.ValueOf(pattern))
+		return reflect.TypeAssert[T](reflect.ValueOf(pattern))
+	}
 }

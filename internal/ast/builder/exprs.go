@@ -14,7 +14,7 @@ func (v *ASTBuilder) VisitDotRecord(ctx *parser.DotRecordContext) interface{} {
 	return &nodes.DotRecord{
 		Subexpr: subexpr,
 		Label:   label,
-		Repr:    ctx.GetText(),
+		Repr:    getOriginalCode(ctx, v),
 	}
 }
 
@@ -24,35 +24,35 @@ func (v *ASTBuilder) VisitDotTuple(ctx *parser.DotTupleContext) interface{} {
 	return &nodes.DotTuple{
 		Subexpr: subexpr,
 		Index:   index,
-		Repr:    ctx.GetText(),
+		Repr:    getOriginalCode(ctx, v),
 	}
 }
 
 func (v *ASTBuilder) VisitConstTrue(ctx *parser.ConstTrueContext) interface{} {
 	return &nodes.ConstBool{
 		Value: true,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
 func (v *ASTBuilder) VisitConstFalse(ctx *parser.ConstFalseContext) interface{} {
 	return &nodes.ConstBool{
 		Value: false,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
 func (v *ASTBuilder) VisitConstUnit(ctx *parser.ConstUnitContext) interface{} {
 	return &nodes.ConstUnit{
-		Repr: ctx.GetText(),
+		Repr: getOriginalCode(ctx, v),
 	}
 }
 
 func (v *ASTBuilder) VisitConstInt(ctx *parser.ConstIntContext) interface{} {
-	value, _ := strconv.Atoi(ctx.GetText())
+	value, _ := strconv.Atoi(getOriginalCode(ctx, v))
 	return &nodes.ConstInt{
 		Value: value,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -60,7 +60,7 @@ func (v *ASTBuilder) VisitConstMemory(ctx *parser.ConstMemoryContext) interface{
 	addr := nodes.MemoryAddress{Addr: ctx.GetMem().GetText()}
 	return &nodes.ConstMemory{
 		Memory: addr,
-		Repr:   ctx.GetText(),
+		Repr:   getOriginalCode(ctx, v),
 	}
 }
 
@@ -68,13 +68,13 @@ func (v *ASTBuilder) VisitVar(ctx *parser.VarContext) interface{} {
 	var_ := parseStellaIdent(ctx.GetName())
 	return &nodes.Var{
 		Name: var_,
-		Repr: ctx.GetText(),
+		Repr: getOriginalCode(ctx, v),
 	}
 }
 
 func (v *ASTBuilder) VisitPanic(ctx *parser.PanicContext) interface{} {
 	return &nodes.Panic{
-		Repr: ctx.GetText(),
+		Repr: getOriginalCode(ctx, v),
 	}
 }
 
@@ -82,7 +82,7 @@ func (v *ASTBuilder) VisitThrow(ctx *parser.ThrowContext) interface{} {
 	expr := parseExpr(ctx.GetExpr_(), v)
 	return &nodes.Throw{
 		Expr_: expr,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -95,7 +95,7 @@ func (v *ASTBuilder) VisitTryCatch(ctx *parser.TryCatchContext) interface{} {
 		TryExpr:      tryExpr,
 		Pattern:      pattern,
 		FallbackExpr: fallbackExpr,
-		Repr:         ctx.GetText(),
+		Repr:         getOriginalCode(ctx, v),
 	}
 }
 
@@ -112,7 +112,7 @@ func (v *ASTBuilder) VisitTryCastAs(ctx *parser.TryCastAsContext) interface{} {
 		Pattern:      pattern,
 		Expr_:        expr,
 		FallbackExpr: fallbackExpr,
-		Repr:         ctx.GetText(),
+		Repr:         getOriginalCode(ctx, v),
 	}
 }
 
@@ -123,7 +123,7 @@ func (v *ASTBuilder) VisitTryWith(ctx *parser.TryWithContext) interface{} {
 	return &nodes.TryWith{
 		TryExpr:      tryExpr,
 		FallbackExpr: fallbackExpr,
-		Repr:         ctx.GetText(),
+		Repr:         getOriginalCode(ctx, v),
 	}
 }
 
@@ -131,7 +131,7 @@ func (v *ASTBuilder) VisitInl(ctx *parser.InlContext) interface{} {
 	subexpr := parseExpr(ctx.GetExpr_(), v)
 	return &nodes.Inl{
 		Expr_: subexpr,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -139,7 +139,7 @@ func (v *ASTBuilder) VisitInr(ctx *parser.InrContext) interface{} {
 	subexpr := parseExpr(ctx.GetExpr_(), v)
 	return &nodes.Inr{
 		Expr_: subexpr,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -149,7 +149,7 @@ func (v *ASTBuilder) VisitConsList(ctx *parser.ConsListContext) interface{} {
 	return &nodes.ConsList{
 		Head: head,
 		Tail: tail,
-		Repr: ctx.GetText(),
+		Repr: getOriginalCode(ctx, v),
 	}
 }
 
@@ -157,7 +157,7 @@ func (v *ASTBuilder) VisitHead(ctx *parser.HeadContext) interface{} {
 	list := parseExpr(ctx.GetList(), v)
 	return &nodes.Head{
 		List: list,
-		Repr: ctx.GetText(),
+		Repr: getOriginalCode(ctx, v),
 	}
 }
 
@@ -165,7 +165,7 @@ func (v *ASTBuilder) VisitIsEmpty(ctx *parser.IsEmptyContext) interface{} {
 	list := parseExpr(ctx.GetList(), v)
 	return &nodes.IsEmpty{
 		List: list,
-		Repr: ctx.GetText(),
+		Repr: getOriginalCode(ctx, v),
 	}
 }
 
@@ -173,7 +173,7 @@ func (v *ASTBuilder) VisitTail(ctx *parser.TailContext) interface{} {
 	list := parseExpr(ctx.GetList(), v)
 	return &nodes.Tail{
 		List: list,
-		Repr: ctx.GetText(),
+		Repr: getOriginalCode(ctx, v),
 	}
 }
 
@@ -181,7 +181,7 @@ func (v *ASTBuilder) VisitSucc(ctx *parser.SuccContext) interface{} {
 	n := parseExpr(ctx.GetN(), v)
 	return &nodes.Succ{
 		N:    n,
-		Repr: ctx.GetText(),
+		Repr: getOriginalCode(ctx, v),
 	}
 }
 
@@ -189,7 +189,7 @@ func (v *ASTBuilder) VisitLogicNot(ctx *parser.LogicNotContext) interface{} {
 	expr := parseExpr(ctx.GetExpr_(), v)
 	return &nodes.LogicNot{
 		Expr_: expr,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -197,7 +197,7 @@ func (v *ASTBuilder) VisitPred(ctx *parser.PredContext) interface{} {
 	n := parseExpr(ctx.GetN(), v)
 	return &nodes.Pred{
 		N:    n,
-		Repr: ctx.GetText(),
+		Repr: getOriginalCode(ctx, v),
 	}
 }
 
@@ -205,7 +205,7 @@ func (v *ASTBuilder) VisitIsZero(ctx *parser.IsZeroContext) interface{} {
 	n := parseExpr(ctx.GetN(), v)
 	return &nodes.IsZero{
 		N:    n,
-		Repr: ctx.GetText(),
+		Repr: getOriginalCode(ctx, v),
 	}
 }
 
@@ -213,7 +213,7 @@ func (v *ASTBuilder) VisitFix(ctx *parser.FixContext) interface{} {
 	expr := parseExpr(ctx.GetExpr_(), v)
 	return &nodes.Fix{
 		Expr_: expr,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -226,7 +226,7 @@ func (v *ASTBuilder) VisitNatRec(ctx *parser.NatRecContext) interface{} {
 		N:       n,
 		Initial: initial,
 		Step:    step,
-		Repr:    ctx.GetText(),
+		Repr:    getOriginalCode(ctx, v),
 	}
 }
 
@@ -236,7 +236,7 @@ func (v *ASTBuilder) VisitFold(ctx *parser.FoldContext) interface{} {
 	return &nodes.Fold{
 		Type_: type_,
 		Expr_: expr,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -246,7 +246,7 @@ func (v *ASTBuilder) VisitUnfold(ctx *parser.UnfoldContext) interface{} {
 	return &nodes.Unfold{
 		Type_: type_,
 		Expr_: expr,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -261,7 +261,7 @@ func (v *ASTBuilder) VisitApplication(ctx *parser.ApplicationContext) interface{
 	return &nodes.Application{
 		Function: fun,
 		Args:     args,
-		Repr:     ctx.GetText(),
+		Repr:     getOriginalCode(ctx, v),
 	}
 }
 
@@ -272,7 +272,7 @@ func (v *ASTBuilder) VisitTypeApplication(ctx *parser.TypeApplicationContext) in
 	return &nodes.TypeApplication{
 		Function: fun,
 		Types:    types,
-		Repr:     ctx.GetText(),
+		Repr:     getOriginalCode(ctx, v),
 	}
 }
 
@@ -282,7 +282,7 @@ func (v *ASTBuilder) VisitMultiply(ctx *parser.MultiplyContext) interface{} {
 	return &nodes.Multiply{
 		Left:  left,
 		Right: right,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -292,7 +292,7 @@ func (v *ASTBuilder) VisitDivide(ctx *parser.DivideContext) interface{} {
 	return &nodes.Divide{
 		Left:  left,
 		Right: right,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -302,7 +302,7 @@ func (v *ASTBuilder) VisitLogicAnd(ctx *parser.LogicAndContext) interface{} {
 	return &nodes.LogicAnd{
 		Left:  left,
 		Right: right,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -310,7 +310,7 @@ func (v *ASTBuilder) VisitRef(ctx *parser.RefContext) interface{} {
 	expr := parseExpr(ctx.GetExpr_(), v)
 	return &nodes.Ref{
 		Expr_: expr,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -318,7 +318,7 @@ func (v *ASTBuilder) VisitDeref(ctx *parser.DerefContext) interface{} {
 	expr := parseExpr(ctx.GetExpr_(), v)
 	return &nodes.Deref{
 		Expr_: expr,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -328,7 +328,7 @@ func (v *ASTBuilder) VisitAdd(ctx *parser.AddContext) interface{} {
 	return &nodes.Add{
 		Left:  left,
 		Right: right,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -338,7 +338,7 @@ func (v *ASTBuilder) VisitSubtract(ctx *parser.SubtractContext) interface{} {
 	return &nodes.Subtract{
 		Left:  left,
 		Right: right,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -348,7 +348,7 @@ func (v *ASTBuilder) VisitLogicOr(ctx *parser.LogicOrContext) interface{} {
 	return &nodes.LogicOr{
 		Left:  left,
 		Right: right,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -358,7 +358,7 @@ func (v *ASTBuilder) VisitTypeAsc(ctx *parser.TypeAscContext) interface{} {
 	return &nodes.TypeAsc{
 		Expr_: expr,
 		Type_: type_,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -368,7 +368,7 @@ func (v *ASTBuilder) VisitTypeCast(ctx *parser.TypeCastContext) interface{} {
 	return &nodes.TypeCast{
 		Expr_: expr,
 		Type_: type_,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -379,21 +379,21 @@ func (v *ASTBuilder) VisitAbstraction(ctx *parser.AbstractionContext) interface{
 	return &nodes.Abstraction{
 		Params:     params,
 		ReturnExpr: returnExpr,
-		Repr:       ctx.GetText(),
+		Repr:       getOriginalCode(ctx, v),
 	}
 }
 
 func (v *ASTBuilder) VisitTuple(ctx *parser.TupleContext) interface{} {
 	return &nodes.Tuple{
 		Exprs: parseListOfExpr(ctx.GetExprs(), v),
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
 func (v *ASTBuilder) VisitRecord(ctx *parser.RecordContext) interface{} {
 	return &nodes.Record{
 		Bindings: parseListOfBinding(ctx.GetBindings(), v),
-		Repr:     ctx.GetText(),
+		Repr:     getOriginalCode(ctx, v),
 	}
 }
 
@@ -409,7 +409,7 @@ func (v *ASTBuilder) VisitVariant(ctx *parser.VariantContext) interface{} {
 	return &nodes.Variant{
 		Label: label,
 		Rhs:   expr,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -420,14 +420,14 @@ func (v *ASTBuilder) VisitMatch(ctx *parser.MatchContext) interface{} {
 	return &nodes.Match{
 		Expr_: expr,
 		Cases: cases,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
 func (v *ASTBuilder) VisitList(ctx *parser.ListContext) interface{} {
 	return &nodes.List{
 		Exprs: parseListOfExpr(ctx.GetExprs(), v),
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -437,7 +437,7 @@ func (v *ASTBuilder) VisitLessThan(ctx *parser.LessThanContext) interface{} {
 	return &nodes.LessThan{
 		Left:  left,
 		Right: right,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -447,7 +447,7 @@ func (v *ASTBuilder) VisitLessThanOrEqual(ctx *parser.LessThanOrEqualContext) in
 	return &nodes.LessThanOrEqual{
 		Left:  left,
 		Right: right,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -457,7 +457,7 @@ func (v *ASTBuilder) VisitGreaterThan(ctx *parser.GreaterThanContext) interface{
 	return &nodes.GreaterThan{
 		Left:  left,
 		Right: right,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -467,7 +467,7 @@ func (v *ASTBuilder) VisitGreaterThanOrEqual(ctx *parser.GreaterThanOrEqualConte
 	return &nodes.GreaterThanOrEqual{
 		Left:  left,
 		Right: right,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -477,7 +477,7 @@ func (v *ASTBuilder) VisitEqual(ctx *parser.EqualContext) interface{} {
 	return &nodes.Equal{
 		Left:  left,
 		Right: right,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -487,7 +487,7 @@ func (v *ASTBuilder) VisitNotEqual(ctx *parser.NotEqualContext) interface{} {
 	return &nodes.NotEqual{
 		Left:  left,
 		Right: right,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -498,7 +498,7 @@ func (v *ASTBuilder) VisitAssign(ctx *parser.AssignContext) interface{} {
 	return &nodes.Assign{
 		Lhs:  lhs,
 		Rhs:  rhs,
-		Repr: ctx.GetText(),
+		Repr: getOriginalCode(ctx, v),
 	}
 }
 
@@ -511,7 +511,7 @@ func (v *ASTBuilder) VisitIf(ctx *parser.IfContext) interface{} {
 		Condition: condition,
 		ThenExpr:  thenExpr,
 		ElseExpr:  elseExpr,
-		Repr:      ctx.GetText(),
+		Repr:      getOriginalCode(ctx, v),
 	}
 }
 
@@ -522,7 +522,7 @@ func (v *ASTBuilder) VisitLet(ctx *parser.LetContext) interface{} {
 	return &nodes.Let{
 		PatternBindings: patternBindings,
 		Body:            body,
-		Repr:            ctx.GetText(),
+		Repr:            getOriginalCode(ctx, v),
 	}
 }
 
@@ -533,7 +533,7 @@ func (v *ASTBuilder) VisitLetRec(ctx *parser.LetRecContext) interface{} {
 	return &nodes.LetRec{
 		PatternBindings: patternBindings,
 		Body:            body,
-		Repr:            ctx.GetText(),
+		Repr:            getOriginalCode(ctx, v),
 	}
 }
 
@@ -544,7 +544,7 @@ func (v *ASTBuilder) VisitTypeAbstraction(ctx *parser.TypeAbstractionContext) in
 	return &nodes.TypeAbstraction{
 		Generics: generics,
 		Expr_:    body,
-		Repr:     ctx.GetText(),
+		Repr:     getOriginalCode(ctx, v),
 	}
 }
 
@@ -552,7 +552,7 @@ func (v *ASTBuilder) VisitParenthesisedExpr(ctx *parser.ParenthesisedExprContext
 	expr := parseExpr(ctx.GetExpr_(), v)
 	return &nodes.ParenthesisedExpr{
 		Expr_: expr,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -560,7 +560,7 @@ func (v *ASTBuilder) VisitTerminatingSemicolon(ctx *parser.TerminatingSemicolonC
 	expr := parseExpr(ctx.GetExpr_(), v)
 	return &nodes.TerminatingSemicolon{
 		Expr_: expr,
-		Repr:  ctx.GetText(),
+		Repr:  getOriginalCode(ctx, v),
 	}
 }
 
@@ -572,6 +572,6 @@ func (v *ASTBuilder) VisitSequence(ctx *parser.SequenceContext) interface{} {
 		Expr1: expr1,
 		Expr2: expr2,
 
-		Repr: ctx.GetText(),
+		Repr: getOriginalCode(ctx, v),
 	}
 }

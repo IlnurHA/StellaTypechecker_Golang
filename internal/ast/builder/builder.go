@@ -3,15 +3,19 @@ package ast
 import (
 	nodes "typechecker/internal/ast/nodes"
 	"typechecker/internal/parser"
+
+	"github.com/antlr4-go/antlr/v4"
 )
 
 type ASTBuilder struct {
 	*parser.BasestellaParserVisitor
+	parser antlr.Parser
 }
 
-func NewASTBuilder() *ASTBuilder {
+func NewASTBuilder(p antlr.Parser) *ASTBuilder {
 	return &ASTBuilder{
 		BasestellaParserVisitor: &parser.BasestellaParserVisitor{},
+		parser:                  p,
 	}
 }
 
@@ -28,7 +32,7 @@ func (v *ASTBuilder) VisitStart_Type(ctx *parser.Start_TypeContext) interface{} 
 }
 
 func (v *ASTBuilder) VisitLanguageCore(ctx *parser.LanguageCoreContext) interface{} {
-	return nodes.LanguageDeclaration{Name: "core", Repr: ctx.GetText()}
+	return nodes.LanguageDeclaration{Name: "core", Repr: getOriginalCode(ctx, v)}
 }
 
 func (v *ASTBuilder) VisitProgram(ctx *parser.ProgramContext) interface{} {
@@ -40,7 +44,7 @@ func (v *ASTBuilder) VisitProgram(ctx *parser.ProgramContext) interface{} {
 		LanguageDecl: languageDecl,
 		Extensions:   extensions,
 		Declarations: declarations,
-		Repr:         ctx.GetText(),
+		Repr:         getOriginalCode(ctx, v),
 	}
 }
 

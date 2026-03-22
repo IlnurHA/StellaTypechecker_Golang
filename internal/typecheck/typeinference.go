@@ -93,6 +93,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		err := addParametersToContext(ctx, v.Params)
 
 		if err != nil {
+			err.AddIfEmptyExpr(v)
 			return nil, err
 		}
 
@@ -115,8 +116,10 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		if _, ok := inferredType.(*nodes.TypeFun); ok {
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_NOT_A_FUNCTION)
-			err.AddIfEmptyExpr(v.Function)
+			err.AddAdditionalInfo(fmt.Sprintf("Expression %s is not a function", v.Function))
+			err.AddIfEmptyExpr(v)
 			err.AddIfEmptyActualType(inferredType)
+			err.Freeze()
 			return nil, &err
 		}
 
@@ -126,6 +129,8 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			err := NewTypeCheckErrorErrorType(ERROR_INCORRECT_NUMBER_OF_ARGUMENTS)
 			err.AddIfEmptyActualType(inferredFunType)
 			err.AddAdditionalInfo(fmt.Sprintf("Expected %d. Got %d", len(inferredFunType.ParamTypes), len(v.Args)))
+			err.AddIfEmptyExpr(v)
+			err.Freeze()
 			return nil, &err
 		}
 
@@ -165,8 +170,10 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		if _, ok := inferredType.(*nodes.TypeTuple); ok {
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_NOT_A_TUPLE)
-			err.AddIfEmptyExpr(v.Subexpr)
+			err.AddAdditionalInfo(fmt.Sprintf("Expression %s is not a tuple", v.Subexpr))
+			err.AddIfEmptyExpr(v)
 			err.AddIfEmptyActualType(inferredType)
+			err.Freeze()
 			return nil, &err
 		}
 
@@ -176,6 +183,8 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			err := NewTypeCheckErrorErrorType(ERROR_TUPLE_INDEX_OUT_OF_BOUNDS)
 			err.AddIfEmptyExpr(v)
 			err.AddAdditionalInfo(fmt.Sprintf("Actual length %d. Tried to access %d index", len(tupleType.Types), v.Index))
+			err.AddIfEmptyActualType(tupleType)
+			err.Freeze()
 			return nil, &err
 		}
 
@@ -217,8 +226,10 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		if _, ok := inferredType.(*nodes.TypeRecord); ok {
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_NOT_A_RECORD)
-			err.AddIfEmptyExpr(v.Subexpr)
+			err.AddAdditionalInfo(fmt.Sprintf("Expression %s is not a record", v.Subexpr))
+			err.AddIfEmptyExpr(v)
 			err.AddIfEmptyActualType(inferredType)
+			err.Freeze()
 			return nil, &err
 		}
 
@@ -302,8 +313,10 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			if _, ok := inferredType.(*nodes.TypeList); ok {
 			} else {
 				err := NewTypeCheckErrorErrorType(ERROR_NOT_A_LIST)
-				err.AddIfEmptyExpr(v.Tail)
+				err.AddAdditionalInfo(fmt.Sprintf("Expression %s is not a list", v.Tail))
+				err.AddIfEmptyExpr(v)
 				err.AddIfEmptyActualType(inferredType)
+				err.Freeze()
 				return nil, &err
 			}
 
@@ -337,8 +350,10 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			return listType.Type_, nil
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_NOT_A_LIST)
-			err.AddIfEmptyExpr(v.List)
+			err.AddAdditionalInfo(fmt.Sprintf("Expression %s is not a list", v.List))
+			err.AddIfEmptyExpr(v)
 			err.AddIfEmptyActualType(inferredType)
+			err.Freeze()
 			return nil, &err
 		}
 	case *nodes.Tail:
@@ -352,8 +367,10 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			return listType, nil
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_NOT_A_LIST)
-			err.AddIfEmptyExpr(v.List)
+			err.AddAdditionalInfo(fmt.Sprintf("Expression %s is not a list", v.List))
+			err.AddIfEmptyExpr(v)
 			err.AddIfEmptyActualType(inferredType)
+			err.Freeze()
 			return nil, &err
 		}
 	case *nodes.IsEmpty:
@@ -367,8 +384,10 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			return &nodes.TypeBool{}, nil
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_NOT_A_LIST)
-			err.AddIfEmptyExpr(v.List)
+			err.AddAdditionalInfo(fmt.Sprintf("Expression %s is not a list", v.List))
+			err.AddIfEmptyExpr(v)
 			err.AddIfEmptyActualType(inferredType)
+			err.Freeze()
 			return nil, &err
 		}
 	case *nodes.Variant:
@@ -387,7 +406,9 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			if len(listType.ParamTypes) != 1 {
 				err_ := NewTypeCheckErrorErrorType(ERROR_INCORRECT_NUMBER_OF_ARGUMENTS)
 				err_.AddIfEmptyExpr(v.Expr_)
-				err.AddAdditionalInfo(fmt.Sprintf("Expected 1. Got %d", len(listType.ParamTypes)))
+				err_.AddAdditionalInfo(fmt.Sprintf("Expected 1. Got %d", len(listType.ParamTypes)))
+				err_.AddIfEmptyExpr(v)
+				err_.Freeze()
 				return nil, &err_
 			}
 
@@ -405,8 +426,10 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			return listType.ReturnType, nil
 		} else {
 			err := NewTypeCheckErrorErrorType(ERROR_NOT_A_FUNCTION)
-			err.AddIfEmptyExpr(v.Expr_)
+			err.AddAdditionalInfo(fmt.Sprintf("Expression %s is not a function", v.Expr_))
+			err.AddIfEmptyExpr(v)
 			err.AddIfEmptyActualType(inferredType)
+			err.Freeze()
 			return nil, &err
 		}
 	case *nodes.Match:
@@ -429,6 +452,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 
 		err = checkExhaustiveness(v.Cases, inferredType)
 		if err != nil {
+			err.AddIfEmptyExpr(v)
 			return nil, err
 		}
 

@@ -19,7 +19,6 @@ func addParametersToContext(ctx *Context, paramDecls []nodes.ParameterDeclaratio
 
 		if !res {
 			err := NewTypeCheckErrorErrorType(ERROR_DUPLICATE_FUNCTION_PARAMETER)
-			err.AddIfEmptyExpr(&param)
 			return &err
 		}
 	}

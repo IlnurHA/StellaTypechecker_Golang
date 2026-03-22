@@ -69,7 +69,7 @@ type TypeParens struct {
 }
 
 func (field *RecordFieldType) String() string {
-	return fmt.Sprintf("%s : %s", field.Label, field.Type_)
+	return fmt.Sprintf("%s : %s", field.Label.String(), field.Type_)
 }
 
 func (field *VariantFieldType) String() string {
