@@ -312,7 +312,6 @@ func checkForPattern[T nodes.Pattern](pattern nodes.Pattern) (T, bool) {
 	case *nodes.ParenthesisedPattern:
 		return checkForPattern[T](v.Pattern)
 	default:
-		fmt.Printf("trying to reflect %s with value of %s \n", pattern, reflect.ValueOf(pattern))
 		return reflect.TypeAssert[T](reflect.ValueOf(pattern))
 	}
 }
