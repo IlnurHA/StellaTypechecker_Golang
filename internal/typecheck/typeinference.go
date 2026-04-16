@@ -615,6 +615,118 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		err.AddIfEmptyExpr(v)
 		err.Freeze()
 		return nil, &err
+	case *nodes.Throw:
+		if ctx.GetExceptionType() == nil {
+			err := NewTypeCheckErrorErrorType(ERROR_EXCEPTION_TYPE_NOT_DECLARED)
+			err.AddIfEmptyExpr(v)
+			return nil, &err
+		}
+
+		err := NewTypeCheckErrorErrorType(ERROR_AMBIGUOUS_THROW_TYPE)
+		err.AddIfEmptyExpr(v)
+		err.Freeze()
+		return nil, &err
+	case *nodes.TryWith:
+		if ctx.GetExceptionType() == nil {
+			err := NewTypeCheckErrorErrorType(ERROR_EXCEPTION_TYPE_NOT_DECLARED)
+			err.AddIfEmptyExpr(v)
+			return nil, &err
+		}
+
+		inferredType, err := infer(ctx, v.TryExpr)
+
+		if err != nil && err.IsAmbiguousError() {
+			// If lhs is ambiguous try to get type from rhs
+			fallbackInferredType, err := infer(ctx, v.FallbackExpr)
+
+			if err != nil {
+				return nil, err
+			}
+
+			err = CheckType(ctx, v.TryExpr, fallbackInferredType)
+
+			if err != nil {
+				return nil, err
+			}
+
+			return fallbackInferredType, nil
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		err = CheckType(ctx, v.FallbackExpr, inferredType)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return inferredType, nil
+	case *nodes.TryCatch:
+		exceptionType := ctx.GetExceptionType()
+
+		if exceptionType == nil {
+			err := NewTypeCheckErrorErrorType(ERROR_EXCEPTION_TYPE_NOT_DECLARED)
+			err.AddIfEmptyExpr(v)
+			return nil, &err
+		}
+
+		inferredType, err := infer(ctx, v.TryExpr)
+
+		if err != nil && err.IsAmbiguousError() {
+			// If lhs is ambiguous try to get type from rhs
+			// Pattern handling
+			ctx.AddNewScope()
+
+			err = checkPatternType(v.Pattern, exceptionType)
+
+			if err != nil {
+				ctx.RemoveLastScope()
+				return nil, err
+			}
+
+			patternToContext(ctx, v.Pattern, exceptionType)
+
+			fallbackInferredType, err := infer(ctx, v.FallbackExpr)
+			ctx.RemoveLastScope()
+
+			if err != nil {
+				return nil, err
+			}
+
+			err = CheckType(ctx, v.TryExpr, fallbackInferredType)
+
+			if err != nil {
+				return nil, err
+			}
+
+			return fallbackInferredType, nil
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		// Pattern handling
+		ctx.AddNewScope()
+		defer ctx.RemoveLastScope()
+
+		err = checkPatternType(v.Pattern, exceptionType)
+
+		if err != nil {
+			return nil, err
+		}
+
+		patternToContext(ctx, v.Pattern, exceptionType)
+
+		err = CheckType(ctx, v.FallbackExpr, inferredType)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return inferredType, nil
 
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)

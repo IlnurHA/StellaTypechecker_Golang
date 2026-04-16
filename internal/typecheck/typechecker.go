@@ -798,6 +798,60 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		// Has any type
 		return nil
 
+	case *nodes.Throw:
+		exceptionType := ctx.GetExceptionType()
+
+		if exceptionType == nil {
+			err := NewTypeCheckErrorErrorType(ERROR_EXCEPTION_TYPE_NOT_DECLARED)
+			err.AddIfEmptyExpr(v)
+			return &err
+		}
+
+		return CheckType(ctx, v.Expr_, exceptionType)
+	case *nodes.TryWith:
+		if ctx.GetExceptionType() == nil {
+			err := NewTypeCheckErrorErrorType(ERROR_EXCEPTION_TYPE_NOT_DECLARED)
+			err.AddIfEmptyExpr(v)
+			return &err
+		}
+
+		err := CheckType(ctx, v.TryExpr, expectedType)
+
+		if err != nil {
+			return err
+		}
+
+		return CheckType(ctx, v.FallbackExpr, expectedType)
+
+	case *nodes.TryCatch:
+		exceptionType := ctx.GetExceptionType()
+
+		if exceptionType == nil {
+			err := NewTypeCheckErrorErrorType(ERROR_EXCEPTION_TYPE_NOT_DECLARED)
+			err.AddIfEmptyExpr(v)
+			return &err
+		}
+
+		err := CheckType(ctx, v.TryExpr, expectedType)
+
+		if err != nil {
+			return err
+		}
+
+		// Pattern handling
+		ctx.AddNewScope()
+		defer ctx.RemoveLastScope()
+
+		err = checkPatternType(v.Pattern, exceptionType)
+
+		if err != nil {
+			return err
+		}
+
+		patternToContext(ctx, v.Pattern, exceptionType)
+
+		return CheckType(ctx, v.FallbackExpr, expectedType)
+
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
 		err.AddAdditionalInfo(fmt.Sprintf("Not implemented check type switch for %T", node))
