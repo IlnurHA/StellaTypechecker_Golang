@@ -6,7 +6,7 @@ import (
 )
 
 func ParseProgram(node nodes.AProgram) *TypecheckError {
-	context := NewContext()
+	context := NewContext(node.Extensions)
 
 	context.AddNewScope()
 	defer context.RemoveLastScope()
