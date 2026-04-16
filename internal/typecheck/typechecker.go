@@ -737,6 +737,14 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		}
 
 		return nil
+	case *nodes.TypeCast:
+		err := CheckStellaType(v.Type_, expectedType)
+
+		if err != nil {
+			return err
+		}
+
+		return CheckType(ctx, v.Expr_, v.Type_)
 
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)

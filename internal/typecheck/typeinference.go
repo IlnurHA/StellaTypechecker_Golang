@@ -596,7 +596,20 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		err.AddIfEmptyExpr(v)
 		err.Freeze()
 		return nil, &err
+	case *nodes.TypeCast:
+		inferredType, err := infer(ctx, v.Expr_)
 
+		if err != nil {
+			return nil, err
+		}
+
+		err = CheckStellaType(inferredType, v.Type_)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return v.Type_, nil
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
 		err.AddAdditionalInfo(fmt.Sprintf("Not implemented type inference for %s", node))
