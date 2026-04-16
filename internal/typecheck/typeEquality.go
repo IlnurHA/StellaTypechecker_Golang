@@ -196,7 +196,7 @@ func CheckStellaType(actual nodes.StellaType, expected nodes.StellaType) (err *T
 					}
 
 					if rtField.Type_.IsEmpty() && ltField.Type_.IsEmpty() {
-						return nil
+						continue
 					}
 
 					err := CheckStellaType(ltField.Type_.Require(), rtField.Type_.Require())
