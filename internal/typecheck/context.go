@@ -80,7 +80,13 @@ func (ctx *Context) SetExceptionType(exceptionType nodes.StellaType) *TypecheckE
 func (ctx *Context) SetExceptionVariant(variant nodes.ExceptionVariantDeclaration) *TypecheckError {
 	if ctx.exceptionType != nil {
 		if variantHandler, ok := ctx.exceptionType.(*exceptionhandler.VariantExceptionHandler); ok {
-			variantHandler.AddExceptionVariant(variant)
+			ok := variantHandler.AddExceptionVariant(variant)
+
+			if !ok {
+				err := NewTypeCheckErrorErrorType(ERROR_DUPLICATE_EXCEPTION_VARIANT)
+				return &err
+			}
+
 			return nil
 		}
 
