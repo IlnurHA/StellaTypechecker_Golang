@@ -677,6 +677,66 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		return CheckType(ctx, v.Expr_, expectedType)
 	case *nodes.ParenthesisedExpr:
 		return CheckType(ctx, v.Expr_, expectedType)
+	case *nodes.Ref:
+		// ERROR_UNEXPECTED_REFERENCE
+		if _, ok := expectedType.(*nodes.TypeRef); ok {
+		} else {
+			err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_REFERENCE)
+			err.AddAdditionalInfo(fmt.Sprintf("Expected %s. Got reference type", expectedType))
+			return &err
+		}
+
+		refType, _ := expectedType.(*nodes.TypeRef)
+
+		return CheckType(ctx, v.Expr_, refType.Type_)
+	case *nodes.Deref:
+		return CheckType(ctx, v.Expr_, &nodes.TypeRef{Type_: expectedType})
+	case *nodes.Assign:
+		// Check if expected type is unit
+		err := CheckStellaType(&nodes.TypeUnit{}, expectedType)
+
+		if err != nil {
+			return err
+		}
+
+		// Get assign
+		lhs, err := infer(ctx, v.Lhs)
+
+		if err != nil && err.IsAmbiguousError() {
+			// If lhs is ambiguous try to get type from rhs
+			rhs, err := infer(ctx, v.Rhs)
+
+			if err != nil {
+				return err
+			}
+
+			return CheckType(ctx, v.Lhs, &nodes.TypeRef{Type_: rhs})
+		}
+
+		if err != nil {
+			return err
+		}
+
+		if refType, ok := lhs.(*nodes.TypeRef); ok {
+			return CheckType(ctx, v.Rhs, refType.Type_)
+		}
+
+		typeErr := NewTypeCheckErrorErrorType(ERROR_NOT_A_REFERENCE)
+		typeErr.AddAdditionalInfo(fmt.Sprintf("Expression %s is not a reference", v.Lhs))
+		typeErr.AddIfEmptyExpr(v)
+		typeErr.AddIfEmptyActualType(lhs)
+		typeErr.Freeze()
+		return &typeErr
+	case *nodes.ConstMemory:
+		// ERROR_UNEXPECTED_MEMORY_ADDRESS
+		if _, ok := expectedType.(*nodes.TypeRef); ok {
+		} else {
+			err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_MEMORY_ADDRESS)
+			err.AddAdditionalInfo(fmt.Sprintf("Expected %s. Got reference type", expectedType))
+			return &err
+		}
+
+		return nil
 
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
