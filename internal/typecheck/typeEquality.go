@@ -5,7 +5,14 @@ import (
 	nodes "typechecker/internal/ast/nodes"
 )
 
-func CheckStellaType(actual nodes.StellaType, expected nodes.StellaType) (err *TypecheckError) {
+func CheckStellaType(ctx *Context, actual nodes.StellaType, expected nodes.StellaType) (err *TypecheckError) {
+	if ctx.HasExtension(SUBTYPING) {
+		return SubtypeOf(actual, expected)
+	}
+	return checkStellaType(actual, expected)
+}
+
+func checkStellaType(actual nodes.StellaType, expected nodes.StellaType) (err *TypecheckError) {
 	defer func() {
 		if err != nil {
 			err.OverwriteActualType(actual)
@@ -49,7 +56,7 @@ func CheckStellaType(actual nodes.StellaType, expected nodes.StellaType) (err *T
 			return &err
 		}
 
-		return CheckStellaType(lt.Type_, rt.Type_)
+		return checkStellaType(lt.Type_, rt.Type_)
 	case *nodes.TypeRef:
 		rt, ok := expected.(*nodes.TypeRef)
 
@@ -58,7 +65,7 @@ func CheckStellaType(actual nodes.StellaType, expected nodes.StellaType) (err *T
 			return &err
 		}
 
-		return CheckStellaType(lt.Type_, rt.Type_)
+		return checkStellaType(lt.Type_, rt.Type_)
 	case *nodes.TypeSum:
 		rt, ok := expected.(*nodes.TypeSum)
 
@@ -67,13 +74,13 @@ func CheckStellaType(actual nodes.StellaType, expected nodes.StellaType) (err *T
 			return &err
 		}
 
-		err := CheckStellaType(lt.Left, rt.Left)
+		err := checkStellaType(lt.Left, rt.Left)
 
 		if err != nil {
 			return err
 		}
 
-		return CheckStellaType(lt.Right, rt.Right)
+		return checkStellaType(lt.Right, rt.Right)
 	case *nodes.TypeFun:
 		rt, ok := expected.(*nodes.TypeFun)
 
@@ -88,11 +95,11 @@ func CheckStellaType(actual nodes.StellaType, expected nodes.StellaType) (err *T
 			return &err
 		}
 
-		res := CheckStellaType(lt.ReturnType, rt.ReturnType)
+		res := checkStellaType(lt.ReturnType, rt.ReturnType)
 
 		index := 0
 		for res == nil && index < len(rt.ParamTypes) {
-			res = CheckStellaType(lt.ParamTypes[index], rt.ParamTypes[index])
+			res = checkStellaType(lt.ParamTypes[index], rt.ParamTypes[index])
 			index++
 		}
 
@@ -108,7 +115,7 @@ func CheckStellaType(actual nodes.StellaType, expected nodes.StellaType) (err *T
 		var res *TypecheckError = nil
 		index := 0
 		for res == nil && index < len(rt.Types) {
-			res = CheckStellaType(lt.Types[index], rt.Types[index])
+			res = checkStellaType(lt.Types[index], rt.Types[index])
 			index++
 		}
 
@@ -128,7 +135,7 @@ func CheckStellaType(actual nodes.StellaType, expected nodes.StellaType) (err *T
 
 			for _, ltField := range lt.FieldTypes {
 				if rtField.Label.Equal(&ltField.Label) {
-					err := CheckStellaType(ltField.Type_, rtField.Type_)
+					err := checkStellaType(ltField.Type_, rtField.Type_)
 					if err != nil {
 						return err
 					}
@@ -199,7 +206,7 @@ func CheckStellaType(actual nodes.StellaType, expected nodes.StellaType) (err *T
 						continue
 					}
 
-					err := CheckStellaType(ltField.Type_.Require(), rtField.Type_.Require())
+					err := checkStellaType(ltField.Type_.Require(), rtField.Type_.Require())
 					if err != nil {
 						return err
 					}
@@ -223,7 +230,7 @@ func CheckStellaType(actual nodes.StellaType, expected nodes.StellaType) (err *T
 			return &err
 		}
 
-		return CheckStellaType(lt.Type_, rt.Type_)
+		return checkStellaType(lt.Type_, rt.Type_)
 	case *nodes.TypeTop:
 		_, ok := expected.(*nodes.TypeTop)
 
@@ -244,11 +251,11 @@ func CheckStellaType(actual nodes.StellaType, expected nodes.StellaType) (err *T
 		return nil
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
-		err.AddAdditionalInfo(fmt.Sprintf("Not implemented CheckStellaType for %s", actual))
+		err.AddAdditionalInfo(fmt.Sprintf("Not implemented checkStellaType for %s", actual))
 		return &err
 	}
 }
 
 func IsEqualType(actual nodes.StellaType, expected nodes.StellaType) bool {
-	return CheckStellaType(actual, expected) == nil
+	return checkStellaType(actual, expected) == nil
 }

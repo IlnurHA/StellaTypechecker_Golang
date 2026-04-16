@@ -603,7 +603,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			return nil, err
 		}
 
-		err = CheckStellaType(inferredType, v.Type_)
+		err = CheckStellaType(ctx, inferredType, v.Type_)
 
 		if err != nil {
 			return nil, err
