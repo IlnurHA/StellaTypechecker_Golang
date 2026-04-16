@@ -526,6 +526,76 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		return infer(ctx, v.Expr_)
 	case *nodes.ParenthesisedExpr:
 		return infer(ctx, v.Expr_)
+	case *nodes.Ref:
+		inferredType, err := infer(ctx, v.Expr_)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return &nodes.TypeRef{Type_: inferredType}, nil
+	case *nodes.Deref:
+		inferredType, err := infer(ctx, v.Expr_)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if refType, ok := inferredType.(*nodes.TypeRef); ok {
+			return refType.Type_, nil
+		}
+
+		typeErr := NewTypeCheckErrorErrorType(ERROR_NOT_A_REFERENCE)
+		typeErr.AddAdditionalInfo(fmt.Sprintf("Expression %s is not a reference", v.Expr_))
+		typeErr.AddIfEmptyExpr(v)
+		typeErr.AddIfEmptyActualType(inferredType)
+		typeErr.Freeze()
+		return nil, &typeErr
+	case *nodes.Assign:
+		lhs, err := infer(ctx, v.Lhs)
+
+		if err != nil && err.IsAmbiguousError() {
+			// If lhs is ambiguous try to get type from rhs
+			rhs, err := infer(ctx, v.Rhs)
+
+			if err != nil {
+				return nil, err
+			}
+
+			err = CheckType(ctx, v.Lhs, &nodes.TypeRef{Type_: rhs})
+
+			if err != nil {
+				return nil, err
+			}
+
+			return &nodes.TypeUnit{}, nil
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		if refType, ok := lhs.(*nodes.TypeRef); ok {
+			err = CheckType(ctx, v.Rhs, refType.Type_)
+
+			if err != nil {
+				return nil, err
+			}
+
+			return &nodes.TypeUnit{}, nil
+		}
+
+		typeErr := NewTypeCheckErrorErrorType(ERROR_NOT_A_REFERENCE)
+		typeErr.AddAdditionalInfo(fmt.Sprintf("Expression %s is not a reference", v.Lhs))
+		typeErr.AddIfEmptyExpr(v)
+		typeErr.AddIfEmptyActualType(lhs)
+		typeErr.Freeze()
+		return nil, &typeErr
+	case *nodes.ConstMemory:
+		err := NewTypeCheckErrorErrorType(ERROR_AMBIGUOUS_REFERENCE_TYPE)
+		err.AddIfEmptyExpr(v)
+		err.Freeze()
+		return nil, &err
 
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
