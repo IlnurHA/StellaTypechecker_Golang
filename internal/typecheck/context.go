@@ -14,6 +14,13 @@ const (
 	AMBIGUOUS_TYPE_AS_BOT
 )
 
+func (pe ProgramExtension) String() string {
+	return []string{
+		"#structural-subtyping",
+		"#ambiguous-type-as-bottom",
+	}[pe]
+}
+
 type Context struct {
 	scope      scope.ScopeStack
 	extensions []ProgramExtension
@@ -48,8 +55,12 @@ func (ctx *Context) HasExtension(extension ProgramExtension) bool {
 	return false
 }
 
+func (ctx *Context) GetExtensions() []ProgramExtension {
+	return ctx.extensions
+}
+
 func parseExtensions(exts []nodes.Extension) []ProgramExtension {
-	programExt := make([]ProgramExtension, len(exts))
+	programExt := make([]ProgramExtension, 0)
 
 	for _, ext := range exts {
 		switch ext.Name {

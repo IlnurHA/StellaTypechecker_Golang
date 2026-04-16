@@ -8,6 +8,12 @@ import (
 func ParseProgram(node nodes.AProgram) *TypecheckError {
 	context := NewContext(node.Extensions)
 
+	// DEBUG
+	// fmt.Println("Active extensions:")
+	// for _, ext := range context.GetExtensions() {
+	// 	fmt.Println(ext)
+	// }
+
 	context.AddNewScope()
 	defer context.RemoveLastScope()
 
