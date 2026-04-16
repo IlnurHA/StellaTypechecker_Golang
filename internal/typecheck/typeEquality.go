@@ -224,6 +224,24 @@ func CheckStellaType(actual nodes.StellaType, expected nodes.StellaType) (err *T
 		}
 
 		return CheckStellaType(lt.Type_, rt.Type_)
+	case *nodes.TypeTop:
+		_, ok := expected.(*nodes.TypeTop)
+
+		if !ok {
+			err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_TYPE_FOR_EXPRESSION)
+			return &err
+		}
+
+		return nil
+	case *nodes.TypeBot:
+		_, ok := expected.(*nodes.TypeBot)
+
+		if !ok {
+			err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_TYPE_FOR_EXPRESSION)
+			return &err
+		}
+
+		return nil
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
 		err.AddAdditionalInfo(fmt.Sprintf("Not implemented CheckStellaType for %s", actual))
