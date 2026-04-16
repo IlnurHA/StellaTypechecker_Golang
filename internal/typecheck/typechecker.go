@@ -751,6 +751,9 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		}
 
 		return CheckType(ctx, v.Expr_, v.Type_)
+	case *nodes.Panic:
+		// Has any type
+		return nil
 
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)

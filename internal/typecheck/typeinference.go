@@ -610,6 +610,12 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		}
 
 		return v.Type_, nil
+	case *nodes.Panic:
+		err := NewTypeCheckErrorErrorType(ERROR_AMBIGUOUS_PANIC_TYPE)
+		err.AddIfEmptyExpr(v)
+		err.Freeze()
+		return nil, &err
+
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
 		err.AddAdditionalInfo(fmt.Sprintf("Not implemented type inference for %s", node))
