@@ -1,3 +1,3 @@
 #!/bin/bash
 
-go run cmd/typecheckerFromDir/main.go "$@"
+go run cmd/typechecker/main.go "$@"

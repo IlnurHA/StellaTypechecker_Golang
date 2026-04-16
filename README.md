@@ -36,7 +36,7 @@ in function: main
 - Build:
 
     ```bash
-    go build cmd/typecheckerFromDir/main.go
+    go build cmd/typechecker/main.go
     ```
 
 ## Execution
@@ -52,6 +52,8 @@ in function: main
 >    `-dirPath` **string** Path to get tests from
 >
 >    `-filePath` **string** Path to source code on stella
+
+or execute it without flags to read from stdin
 
 ## Tests
 
