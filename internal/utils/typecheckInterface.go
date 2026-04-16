@@ -11,7 +11,7 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 )
 
-func Typecheck(program string) {
+func Typecheck(program string, exitOnError bool) {
 	is := antlr.NewInputStream(program)
 
 	lexer := parser.NewstellaLexer(is)
@@ -27,13 +27,17 @@ func Typecheck(program string) {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Typecheck error:")
 		fmt.Fprintln(os.Stderr, err.String())
+
+		if exitOnError {
+			os.Exit(1)
+		}
 	} else {
 		fmt.Println("Program is well-typed")
 	}
 }
 
-func TypecheckFromFile(filePath string) {
+func TypecheckFromFile(filePath string, exitOnError bool) {
 	fmt.Printf("Typechecking %s...\n", filePath)
 	input, _ := os.ReadFile(filePath)
-	Typecheck(string(input))
+	Typecheck(string(input), exitOnError)
 }

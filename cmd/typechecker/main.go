@@ -11,6 +11,7 @@ import (
 func main() {
 	dirPathPtr := flag.String("dirPath", "", "Path to get tests from")
 	filePathPtr := flag.String("filePath", "", "Path to source code on stella")
+	noExitOnErrorPtr := flag.Bool("noExitOnError", false, "If false then exits with status code 1 on typecheck error. Otherwise, continues to typecheck (in case of dirPath)")
 
 	flag.Parse()
 
@@ -23,7 +24,7 @@ func main() {
 			return
 		}
 
-		utils.Typecheck(p)
+		utils.Typecheck(p, !(*noExitOnErrorPtr))
 		return
 	}
 
@@ -40,7 +41,7 @@ func main() {
 			return
 		}
 
-		utils.TypecheckFromFile(*filePathPtr)
+		utils.TypecheckFromFile(*filePathPtr, !(*noExitOnErrorPtr))
 	}
 
 	if *dirPathPtr != "" {
@@ -52,7 +53,7 @@ func main() {
 		}
 
 		for _, file := range files {
-			utils.TypecheckFromFile(file)
+			utils.TypecheckFromFile(file, !(*noExitOnErrorPtr))
 		}
 	}
 }

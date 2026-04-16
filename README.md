@@ -52,6 +52,8 @@ in function: main
 >    `-dirPath` **string** Path to get tests from
 >
 >    `-filePath` **string** Path to source code on stella
+>
+>    `-noExitOnError` \[**bool**\] Skip exitting with status code 1 on type error
 
 or execute it without flags to read from stdin
 
