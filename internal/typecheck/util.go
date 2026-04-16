@@ -85,7 +85,7 @@ func showList[T fmt.Stringer](elems []T) string {
 
 func checkTypeConsistency(type_ nodes.StellaType) *TypecheckError {
 	switch t := type_.(type) {
-	case *nodes.TypeBool, *nodes.TypeNat, *nodes.TypeUnit:
+	case *nodes.TypeBool, *nodes.TypeNat, *nodes.TypeUnit, *nodes.TypeBot, *nodes.TypeTop:
 		return nil
 	case *nodes.TypeFun:
 		for _, param := range t.ParamTypes {
