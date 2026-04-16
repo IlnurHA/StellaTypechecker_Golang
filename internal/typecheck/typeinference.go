@@ -3,6 +3,8 @@ package typecheck
 import (
 	"fmt"
 	nodes "typechecker/internal/ast/nodes"
+
+	"github.com/neocotic/go-optional"
 )
 
 func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
@@ -394,6 +396,20 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			return nil, &err
 		}
 	case *nodes.Variant:
+		if ctx.HasExtension(SUBTYPING) {
+			subtype := optional.Empty[nodes.StellaType]()
+
+			if v.Rhs.IsPresent() {
+				inferredSubType, err := infer(ctx, v.Rhs.Require())
+				if err != nil {
+					return nil, nil
+				}
+				subtype = optional.Of(inferredSubType)
+			}
+
+			return &nodes.TypeVariant{FieldTypes: []nodes.VariantFieldType{{Label: v.Label, Type_: subtype}}}, nil
+		}
+
 		err := NewTypeCheckErrorErrorType(ERROR_AMBIGUOUS_VARIANT_TYPE)
 		err.AddIfEmptyExpr(v)
 		err.Freeze()
