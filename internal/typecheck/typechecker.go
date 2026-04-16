@@ -49,6 +49,10 @@ func ParseProgram(node nodes.AProgram) *TypecheckError {
 					return &err
 				}
 			}
+		case *nodes.ExceptionTypeDeclaration:
+			continue
+		case *nodes.ExceptionVariantDeclaration:
+			continue
 		default:
 			err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
 			err.AddIfEmptyExpr(decl)
@@ -65,12 +69,33 @@ func ParseProgram(node nodes.AProgram) *TypecheckError {
 	context.AddNewScope()
 	// Check declaration bodies
 	for _, declaration := range node.Declarations {
-		type_, _ := constructTypeFromDeclaration(&declaration)
-		err := CheckType(context, declaration, type_)
+		switch decl := declaration.(type) {
+		case *nodes.FunctionDeclaration:
+			type_, _ := constructTypeFromDeclaration(&declaration)
+			err := CheckType(context, declaration, type_)
 
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
+		case *nodes.ExceptionTypeDeclaration:
+			err := context.SetExceptionType(decl.ExceptionType)
+			if err != nil {
+				return nil
+			}
+			continue
+		case *nodes.ExceptionVariantDeclaration:
+			err := context.SetExceptionVariant(*decl)
+			if err != nil {
+				return nil
+			}
+			continue
+		default:
+			err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
+			err.AddIfEmptyExpr(decl)
+			err.AddAdditionalInfo(fmt.Sprintf("Not implemented parse program declaration switch for %s", decl))
+			return &err
 		}
+
 	}
 	context.RemoveLastScope()
 

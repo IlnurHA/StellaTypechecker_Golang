@@ -2,6 +2,7 @@ package typecheck
 
 import (
 	nodes "typechecker/internal/ast/nodes"
+	exceptionhandler "typechecker/internal/typecheck/exceptionHandler"
 	scope "typechecker/internal/typecheck/scope"
 
 	"github.com/neocotic/go-optional"
@@ -22,12 +23,13 @@ func (pe ProgramExtension) String() string {
 }
 
 type Context struct {
-	scope      scope.ScopeStack
-	extensions []ProgramExtension
+	scope         scope.ScopeStack
+	extensions    []ProgramExtension
+	exceptionType exceptionhandler.ExceptionHandler
 }
 
 func NewContext(extensions []nodes.Extension) *Context {
-	return &Context{scope: scope.NewScopeStack(), extensions: parseExtensions(extensions)}
+	return &Context{scope: scope.NewScopeStack(), extensions: parseExtensions(extensions), exceptionType: nil}
 }
 
 func (ctx *Context) RemoveLastScope() {
@@ -57,6 +59,41 @@ func (ctx *Context) HasExtension(extension ProgramExtension) bool {
 
 func (ctx *Context) GetExtensions() []ProgramExtension {
 	return ctx.extensions
+}
+
+func (ctx *Context) SetExceptionType(exceptionType nodes.StellaType) *TypecheckError {
+	if ctx.exceptionType != nil {
+		var err TypecheckError
+		// Duplicate declaration
+		if _, ok := ctx.exceptionType.(*exceptionhandler.RegularExceptionHandler); ok {
+			err = NewTypeCheckErrorErrorType(ERROR_DUPLICATE_EXCEPTION_TYPE)
+		} else {
+			err = NewTypeCheckErrorErrorType(ERROR_CONFLICTING_EXCEPTION_DECLARATIONS)
+		}
+		return &err
+	}
+
+	ctx.exceptionType = exceptionhandler.NewRegularExceptionHandler(exceptionType)
+	return nil
+}
+
+func (ctx *Context) SetExceptionVariant(variant nodes.ExceptionVariantDeclaration) *TypecheckError {
+	if ctx.exceptionType != nil {
+		if variantHandler, ok := ctx.exceptionType.(*exceptionhandler.VariantExceptionHandler); ok {
+			variantHandler.AddExceptionVariant(variant)
+			return nil
+		}
+
+		err := NewTypeCheckErrorErrorType(ERROR_CONFLICTING_EXCEPTION_DECLARATIONS)
+		return &err
+	}
+
+	ctx.exceptionType = exceptionhandler.NewVariantExceptionHandler(variant)
+	return nil
+}
+
+func (ctx *Context) GetExceptionType() nodes.StellaType {
+	return ctx.exceptionType.GetExceptionType()
 }
 
 func parseExtensions(exts []nodes.Extension) []ProgramExtension {
