@@ -161,6 +161,16 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 					// err.AddIfEmptyExpr(decl)
 					return &err
 				}
+			case *nodes.ExceptionTypeDeclaration:
+				err := NewTypeCheckErrorErrorType(ERROR_ILLEGAL_LOCAL_EXCEPTION_TYPE)
+				err.AddIfEmptyFunctionName(v.Name)
+				err.AddIfEmptyExpr(decl)
+				return &err
+			case *nodes.ExceptionVariantDeclaration:
+				err := NewTypeCheckErrorErrorType(ERROR_ILLEGAL_LOCAL_OPEN_VARIANT_EXCEPTION)
+				err.AddIfEmptyFunctionName(v.Name)
+				err.AddIfEmptyExpr(decl)
+				return &err
 			default:
 				err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
 				err.AddIfEmptyExpr(decl)
@@ -194,6 +204,14 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		}
 
 		return nil
+	case *nodes.ExceptionTypeDeclaration:
+		err := NewTypeCheckErrorErrorType(ERROR_ILLEGAL_LOCAL_EXCEPTION_TYPE)
+		err.AddIfEmptyExpr(v)
+		return &err
+	case *nodes.ExceptionVariantDeclaration:
+		err := NewTypeCheckErrorErrorType(ERROR_ILLEGAL_LOCAL_OPEN_VARIANT_EXCEPTION)
+		err.AddIfEmptyExpr(v)
+		return &err
 	case *nodes.ConstUnit:
 		return CheckStellaType(&nodes.TypeUnit{}, expectedType)
 	case *nodes.ConstBool:
