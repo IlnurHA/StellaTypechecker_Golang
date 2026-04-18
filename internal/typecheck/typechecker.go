@@ -603,7 +603,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 			return err
 		}
 
-		return CheckType(ctx, v.Tail, listType.Type_)
+		return CheckType(ctx, v.Tail, listType)
 	case *nodes.Head:
 		listType := nodes.TypeList{Type_: expectedType}
 		return CheckType(ctx, v.List, &listType)
