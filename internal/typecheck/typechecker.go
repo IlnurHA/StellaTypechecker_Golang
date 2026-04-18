@@ -739,6 +739,30 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 
 		return CheckType(ctx, v.Expr_, refType.Type_)
 	case *nodes.Deref:
+		if ctx.HasExtension(SUBTYPING) {
+			inferredTypeRef, err := infer(ctx, v.Expr_)
+
+			if err != nil && err.IsAmbiguousError() {
+				return CheckType(ctx, v.Expr_, &nodes.TypeRef{Type_: expectedType})
+			}
+
+			if err != nil {
+				return err
+			}
+
+			if typeRef, ok := inferredTypeRef.(*nodes.TypeRef); ok {
+				return CheckStellaType(ctx, typeRef.Type_, expectedType)
+			}
+
+			typeErr := NewTypeCheckErrorErrorType(ERROR_NOT_A_REFERENCE)
+			typeErr.AddAdditionalInfo(fmt.Sprintf("Expression %s is not a reference", v.Expr_))
+			typeErr.AddIfEmptyExpr(v)
+			typeErr.AddIfEmptyActualType(inferredTypeRef)
+			typeErr.Freeze()
+			return &typeErr
+		}
+
+		// Has problems with subtyping
 		return CheckType(ctx, v.Expr_, &nodes.TypeRef{Type_: expectedType})
 	case *nodes.Assign:
 		// Check if expected type is unit
