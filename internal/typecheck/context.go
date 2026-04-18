@@ -1,6 +1,7 @@
 package typecheck
 
 import (
+	"fmt"
 	nodes "typechecker/internal/ast/nodes"
 	exceptionhandler "typechecker/internal/typecheck/exceptionHandler"
 	scope "typechecker/internal/typecheck/scope"
@@ -69,6 +70,7 @@ func (ctx *Context) SetExceptionType(exceptionType nodes.StellaType) *TypecheckE
 			err = NewTypeCheckErrorErrorType(ERROR_DUPLICATE_EXCEPTION_TYPE)
 		} else {
 			err = NewTypeCheckErrorErrorType(ERROR_CONFLICTING_EXCEPTION_DECLARATIONS)
+			err.AddAdditionalInfo("Only one type of exceptions are permitted. Please, use only of either open variant type or exception type")
 		}
 		return &err
 	}
@@ -84,6 +86,7 @@ func (ctx *Context) SetExceptionVariant(variant nodes.ExceptionVariantDeclaratio
 
 			if !ok {
 				err := NewTypeCheckErrorErrorType(ERROR_DUPLICATE_EXCEPTION_VARIANT)
+				err.AddAdditionalInfo(fmt.Sprintf("Open variant with this label '%s' already exists", &variant.Name))
 				return &err
 			}
 

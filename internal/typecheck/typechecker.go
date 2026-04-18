@@ -80,13 +80,15 @@ func ParseProgram(node nodes.AProgram) *TypecheckError {
 		case *nodes.ExceptionTypeDeclaration:
 			err := context.SetExceptionType(decl.ExceptionType)
 			if err != nil {
-				return nil
+				err.AddIfEmptyExpr(decl)
+				return err
 			}
 			continue
 		case *nodes.ExceptionVariantDeclaration:
 			err := context.SetExceptionVariant(*decl)
 			if err != nil {
-				return nil
+				err.AddIfEmptyExpr(decl)
+				return err
 			}
 			continue
 		default:
@@ -163,13 +165,17 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 				}
 			case *nodes.ExceptionTypeDeclaration:
 				err := NewTypeCheckErrorErrorType(ERROR_ILLEGAL_LOCAL_EXCEPTION_TYPE)
+				err.AddAdditionalInfo("Exception declarations permitted only in global scope")
 				err.AddIfEmptyFunctionName(v.Name)
 				err.AddIfEmptyExpr(decl)
+				err.Freeze()
 				return &err
 			case *nodes.ExceptionVariantDeclaration:
 				err := NewTypeCheckErrorErrorType(ERROR_ILLEGAL_LOCAL_OPEN_VARIANT_EXCEPTION)
+				err.AddAdditionalInfo("Exception declarations permitted only in global scope")
 				err.AddIfEmptyFunctionName(v.Name)
 				err.AddIfEmptyExpr(decl)
+				err.Freeze()
 				return &err
 			default:
 				err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
@@ -206,11 +212,15 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		return nil
 	case *nodes.ExceptionTypeDeclaration:
 		err := NewTypeCheckErrorErrorType(ERROR_ILLEGAL_LOCAL_EXCEPTION_TYPE)
+		err.AddAdditionalInfo("Exception declarations permitted only in global scope")
 		err.AddIfEmptyExpr(v)
+		err.Freeze()
 		return &err
 	case *nodes.ExceptionVariantDeclaration:
 		err := NewTypeCheckErrorErrorType(ERROR_ILLEGAL_LOCAL_OPEN_VARIANT_EXCEPTION)
+		err.AddAdditionalInfo("Exception declarations permitted only in global scope")
 		err.AddIfEmptyExpr(v)
+		err.Freeze()
 		return &err
 	case *nodes.ConstUnit:
 		return CheckStellaType(ctx, &nodes.TypeUnit{}, expectedType)
