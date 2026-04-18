@@ -16,13 +16,13 @@ func (v *ASTBuilder) VisitDeclTypeAlias(ctx *parser.DeclTypeAliasContext) interf
 
 func (v *ASTBuilder) VisitDeclExceptionVariant(ctx *parser.DeclExceptionVariantContext) interface{} {
 	name := parseStellaIdent(ctx.GetName())
-	type_ := v.Visit(ctx.GetChildOfType(0, nil)).(nodes.StellaType)
+	type_ := parseType(ctx.GetVariantType(), v)
 
 	return &nodes.ExceptionVariantDeclaration{Name: name, VariantType: type_, Repr: getOriginalCode(ctx, v)}
 }
 
 func (v *ASTBuilder) VisitDeclExceptionType(ctx *parser.DeclExceptionTypeContext) interface{} {
-	type_ := v.Visit(ctx.GetChildOfType(0, nil)).(nodes.StellaType)
+	type_ := parseType(ctx.GetExceptionType(), v)
 	return &nodes.ExceptionTypeDeclaration{ExceptionType: type_, Repr: getOriginalCode(ctx, v)}
 }
 
