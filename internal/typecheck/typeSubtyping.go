@@ -36,7 +36,7 @@ func SubtypeOf(left nodes.StellaType, right nodes.StellaType) (err *TypecheckErr
 			return nil
 		}
 	case *nodes.TypeUnit:
-		if _, ok := left.(*nodes.TypeNat); ok {
+		if _, ok := left.(*nodes.TypeUnit); ok {
 			return nil
 		}
 	case *nodes.TypeBot:
