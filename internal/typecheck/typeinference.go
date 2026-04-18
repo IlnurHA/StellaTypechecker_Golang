@@ -262,17 +262,41 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 
 		return v.Type_, nil
 	case *nodes.Inl:
+		if ctx.HasExtension(AMBIGUOUS_TYPE_AS_BOT) {
+			leftSubtype, err := infer(ctx, v.Expr_)
+
+			if err != nil {
+				return nil, err
+			}
+
+			return &nodes.TypeSum{Left: leftSubtype, Right: &nodes.TypeBot{}}, nil
+		}
+
 		err := NewTypeCheckErrorErrorType(ERROR_AMBIGUOUS_SUM_TYPE)
 		err.AddIfEmptyExpr(v)
 		err.Freeze()
 		return nil, &err
 	case *nodes.Inr:
+		if ctx.HasExtension(AMBIGUOUS_TYPE_AS_BOT) {
+			rightSubtype, err := infer(ctx, v.Expr_)
+
+			if err != nil {
+				return nil, err
+			}
+
+			return &nodes.TypeSum{Left: &nodes.TypeBot{}, Right: rightSubtype}, nil
+		}
+
 		err := NewTypeCheckErrorErrorType(ERROR_AMBIGUOUS_SUM_TYPE)
 		err.AddIfEmptyExpr(v)
 		err.Freeze()
 		return nil, &err
 	case *nodes.List:
 		if len(v.Exprs) == 0 {
+			if ctx.HasExtension(AMBIGUOUS_TYPE_AS_BOT) {
+				return &nodes.TypeList{Type_: &nodes.TypeBot{}}, nil
+			}
+
 			err := NewTypeCheckErrorErrorType(ERROR_AMBIGUOUS_LIST)
 			err.AddIfEmptyExpr(v)
 			err.Freeze()
@@ -608,6 +632,10 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		typeErr.Freeze()
 		return nil, &typeErr
 	case *nodes.ConstMemory:
+		if ctx.HasExtension(AMBIGUOUS_TYPE_AS_BOT) {
+			return &nodes.TypeRef{Type_: &nodes.TypeBot{}}, nil
+		}
+
 		err := NewTypeCheckErrorErrorType(ERROR_AMBIGUOUS_REFERENCE_TYPE)
 		err.AddIfEmptyExpr(v)
 		err.Freeze()
@@ -627,6 +655,10 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 
 		return v.Type_, nil
 	case *nodes.Panic:
+		if ctx.HasExtension(AMBIGUOUS_TYPE_AS_BOT) {
+			return &nodes.TypeBot{}, nil
+		}
+
 		err := NewTypeCheckErrorErrorType(ERROR_AMBIGUOUS_PANIC_TYPE)
 		err.AddIfEmptyExpr(v)
 		err.Freeze()
@@ -636,6 +668,10 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			err := NewTypeCheckErrorErrorType(ERROR_EXCEPTION_TYPE_NOT_DECLARED)
 			err.AddIfEmptyExpr(v)
 			return nil, &err
+		}
+
+		if ctx.HasExtension(AMBIGUOUS_TYPE_AS_BOT) {
+			return &nodes.TypeBot{}, nil
 		}
 
 		err := NewTypeCheckErrorErrorType(ERROR_AMBIGUOUS_THROW_TYPE)
