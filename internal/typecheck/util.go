@@ -152,6 +152,83 @@ func checkTypeConsistency(type_ nodes.StellaType) *TypecheckError {
 	}
 }
 
+func needReconstruction(type_ nodes.StellaType) (bool, *TypecheckError) {
+	switch t := type_.(type) {
+	case *nodes.TypeVar:
+		return t.Generated, nil
+	case *nodes.TypeBool, *nodes.TypeNat, *nodes.TypeUnit:
+		return false, nil
+	case *nodes.TypeForAll:
+		return needReconstruction(t.Type_)
+	case *nodes.TypeFun:
+		result := false
+
+		for _, t_ := range t.ParamTypes {
+			res, err := needReconstruction(t_)
+			if err != nil {
+				return false, err
+			}
+			result = result || res
+		}
+
+		res, err := needReconstruction(t.ReturnType)
+
+		if err != nil {
+			return false, err
+		}
+
+		return result || res, nil
+	case *nodes.TypeList:
+		return needReconstruction(t.Type_)
+	case *nodes.TypeParens:
+		return needReconstruction(t.Type_)
+	case *nodes.TypeRecord:
+		result := false
+
+		for _, t_ := range t.FieldTypes {
+			res, err := needReconstruction(t_.Type_)
+			if err != nil {
+				return false, err
+			}
+			result = result || res
+		}
+
+		return result, nil
+	case *nodes.TypeRef:
+		return needReconstruction(t.Type_)
+	case *nodes.TypeSum:
+		left, err := needReconstruction(t.Left)
+
+		if err != nil {
+			return false, err
+		}
+
+		right, err := needReconstruction(t.Right)
+
+		if err != nil {
+			return false, err
+		}
+
+		return left || right, nil
+	case *nodes.TypeTuple:
+		result := false
+
+		for _, t_ := range t.Types {
+			res, err := needReconstruction(t_)
+			if err != nil {
+				return false, err
+			}
+			result = result || res
+		}
+
+		return result, nil
+	}
+
+	err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
+	err.AddAdditionalInfo(fmt.Sprintf("Unimplemented reconstruction need check for %s", type_.String()))
+	return false, &err
+}
+
 // Pair defines a generic struct to hold two values of potentially different types.
 type Pair[T, U any] struct {
 	First  T
