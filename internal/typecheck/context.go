@@ -14,12 +14,16 @@ type ProgramExtension int
 const (
 	SUBTYPING ProgramExtension = iota
 	AMBIGUOUS_TYPE_AS_BOT
+	TYPE_RECONSTRUCTION
+	UNIVERSAL_TYPES
 )
 
 func (pe ProgramExtension) String() string {
 	return []string{
 		"#structural-subtyping",
 		"#ambiguous-type-as-bottom",
+		"#type-reconstruction",
+		"#universal-types",
 	}[pe]
 }
 
@@ -117,6 +121,14 @@ func parseExtensions(exts []nodes.Extension) []ProgramExtension {
 		case "#ambiguous-type-as-bottom":
 			{
 				programExt = append(programExt, AMBIGUOUS_TYPE_AS_BOT)
+			}
+		case "#type-reconstruction":
+			{
+				programExt = append(programExt, TYPE_RECONSTRUCTION)
+			}
+		case "#universal-types":
+			{
+				programExt = append(programExt, UNIVERSAL_TYPES)
 			}
 		}
 	}
