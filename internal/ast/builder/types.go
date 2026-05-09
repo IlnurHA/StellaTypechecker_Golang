@@ -102,7 +102,8 @@ func (v *ASTBuilder) VisitTypeAuto(ctx *parser.TypeAutoContext) interface{} {
 
 func (v *ASTBuilder) VisitTypeVar(ctx *parser.TypeVarContext) interface{} {
 	return &nodes.TypeVar{
-		Name: parseStellaIdent(ctx.GetName()),
+		Name:      parseStellaIdent(ctx.GetName()),
+		Generated: false,
 	}
 }
 
