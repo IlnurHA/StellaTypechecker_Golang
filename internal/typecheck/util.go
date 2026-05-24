@@ -6,40 +6,75 @@ import (
 	nodes "typechecker/internal/ast/nodes"
 )
 
-func addParametersToContext(ctx *Context, paramDecls []nodes.ParameterDeclaration) *TypecheckError {
-	for _, param := range paramDecls {
-		err := checkTypeConsistency(param.ParameterType)
+func addParametersToContext(ctx *Context, paramDecls []nodes.ParameterDeclaration) ([]nodes.ParameterDeclaration, *TypecheckError) {
 
-		if err != nil {
-			return err
+	newParamDeclarations := make([]nodes.ParameterDeclaration, 0, len(paramDecls))
+	for _, param := range paramDecls {
+
+		type_ := param.ParameterType
+
+		if ctx.HasExtension(TYPE_RECONSTRUCTION) {
+			var err *TypecheckError
+			type_, err = transformTypeAuto(ctx, type_)
+
+			if err != nil {
+				return nil, err
+			}
 		}
 
-		res := ctx.AddVar(param.Name, param.ParameterType)
+		err := checkTypeConsistency(type_)
+
+		if err != nil {
+			return nil, err
+		}
+
+		res := ctx.AddVar(param.Name, type_)
+		newParamDeclarations = append(newParamDeclarations, nodes.ParameterDeclaration{Name: param.Name, ParameterType: type_})
 		// println("Tried to add", param.Name.String(), "with type", param.ParameterType.String(), "; success:", res)
 
 		if !res {
 			err := NewTypeCheckErrorErrorType(ERROR_DUPLICATE_FUNCTION_PARAMETER)
-			return &err
+			return nil, &err
 		}
 	}
-	return nil
+	return newParamDeclarations, nil
 }
 
-func constructTypeFromDeclaration(declaration *nodes.Declaration) (nodes.StellaType, *TypecheckError) {
+func constructTypeFromDeclaration(ctx *Context, declaration *nodes.Declaration) (nodes.StellaType, *TypecheckError) {
 	declarationCheck := *declaration
 	switch v := declarationCheck.(type) {
 	case *nodes.FunctionDeclaration:
 		paramTypes := make([]nodes.StellaType, len(v.Params))
 		returnType := v.ReturnType.OrElse(&nodes.TypeUnit{})
 
+		if ctx.HasExtension(TYPE_RECONSTRUCTION) {
+			var err *TypecheckError
+			returnType, err = transformTypeAuto(ctx, returnType)
+
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		for index, param := range v.Params {
-			err := checkTypeConsistency(param.ParameterType)
+			type_ := param.ParameterType
+
+			if ctx.HasExtension(TYPE_RECONSTRUCTION) {
+				var err *TypecheckError
+				type_, err = transformTypeAuto(ctx, type_)
+
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			err := checkTypeConsistency(type_)
 
 			if err != nil {
 				return nil, err
 			}
 
-			paramTypes[index] = param.ParameterType
+			paramTypes[index] = type_
 		}
 
 		err := checkTypeConsistency(returnType)
@@ -145,88 +180,13 @@ func checkTypeConsistency(type_ nodes.StellaType) *TypecheckError {
 			labels[recordFieldType.Label] = true
 		}
 		return nil
+	case *nodes.TypeVar:
+		return nil
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
 		err.AddAdditionalInfo(fmt.Sprintf("Unimplemented check type consistency for %s", type_.String()))
 		return &err
 	}
-}
-
-func needReconstruction(type_ nodes.StellaType) (bool, *TypecheckError) {
-	switch t := type_.(type) {
-	case *nodes.TypeVar:
-		return t.Generated, nil
-	case *nodes.TypeBool, *nodes.TypeNat, *nodes.TypeUnit:
-		return false, nil
-	case *nodes.TypeForAll:
-		return needReconstruction(t.Type_)
-	case *nodes.TypeFun:
-		result := false
-
-		for _, t_ := range t.ParamTypes {
-			res, err := needReconstruction(t_)
-			if err != nil {
-				return false, err
-			}
-			result = result || res
-		}
-
-		res, err := needReconstruction(t.ReturnType)
-
-		if err != nil {
-			return false, err
-		}
-
-		return result || res, nil
-	case *nodes.TypeList:
-		return needReconstruction(t.Type_)
-	case *nodes.TypeParens:
-		return needReconstruction(t.Type_)
-	case *nodes.TypeRecord:
-		result := false
-
-		for _, t_ := range t.FieldTypes {
-			res, err := needReconstruction(t_.Type_)
-			if err != nil {
-				return false, err
-			}
-			result = result || res
-		}
-
-		return result, nil
-	case *nodes.TypeRef:
-		return needReconstruction(t.Type_)
-	case *nodes.TypeSum:
-		left, err := needReconstruction(t.Left)
-
-		if err != nil {
-			return false, err
-		}
-
-		right, err := needReconstruction(t.Right)
-
-		if err != nil {
-			return false, err
-		}
-
-		return left || right, nil
-	case *nodes.TypeTuple:
-		result := false
-
-		for _, t_ := range t.Types {
-			res, err := needReconstruction(t_)
-			if err != nil {
-				return false, err
-			}
-			result = result || res
-		}
-
-		return result, nil
-	}
-
-	err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
-	err.AddAdditionalInfo(fmt.Sprintf("Unimplemented reconstruction need check for %s", type_.String()))
-	return false, &err
 }
 
 // Pair defines a generic struct to hold two values of potentially different types.
@@ -248,4 +208,105 @@ func Zip[T, U any](ts []T, us []U) []Pair[T, U] {
 		pairs[i] = Pair[T, U]{First: ts[i], Second: us[i]}
 	}
 	return pairs
+}
+
+func transformTypeAuto(ctx *Context, type_ nodes.StellaType) (nodes.StellaType, *TypecheckError) {
+	switch t := type_.(type) {
+	case *nodes.TypeAuto:
+		freshVar := ctx.constraintHandler.GetFreshVar()
+		return &freshVar, nil
+	case *nodes.TypeVar, *nodes.TypeBool, *nodes.TypeNat, *nodes.TypeUnit:
+		return t, nil
+	case *nodes.TypeForAll:
+		newType, err := transformTypeAuto(ctx, t.Type_)
+		if err != nil {
+			return nil, err
+		}
+		return &nodes.TypeForAll{Type_: newType, Types: t.Types}, nil
+	case *nodes.TypeFun:
+		newReturnType, err := transformTypeAuto(ctx, t.ReturnType)
+		if err != nil {
+			return nil, err
+		}
+
+		newParamTypes := make([]nodes.StellaType, 0, len(t.ParamTypes))
+		for _, t_ := range t.ParamTypes {
+			newParamType, err := transformTypeAuto(ctx, t_)
+			if err != nil {
+				return nil, err
+			}
+			newParamTypes = append(newParamTypes, newParamType)
+		}
+
+		return &nodes.TypeFun{ParamTypes: newParamTypes, ReturnType: newReturnType}, nil
+	case *nodes.TypeList:
+		newType, err := transformTypeAuto(ctx, t.Type_)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return &nodes.TypeList{Type_: newType}, nil
+	case *nodes.TypeParens:
+		newType, err := transformTypeAuto(ctx, t.Type_)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return &nodes.TypeParens{Type_: newType}, nil
+	case *nodes.TypeRecord:
+		newFieldTypes := make([]nodes.RecordFieldType, 0, len(t.FieldTypes))
+		for _, t_ := range t.FieldTypes {
+			newType, err := transformTypeAuto(ctx, t_.Type_)
+			if err != nil {
+				return nil, err
+			}
+			newFieldTypes = append(newFieldTypes, nodes.RecordFieldType{Label: t_.Label, Type_: newType})
+		}
+		return &nodes.TypeRecord{FieldTypes: newFieldTypes}, nil
+	case *nodes.TypeRef:
+		newType, err := transformTypeAuto(ctx, t.Type_)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return &nodes.TypeRef{Type_: newType}, nil
+	case *nodes.TypeSum:
+
+		newLeft, err := transformTypeAuto(ctx, t.Left)
+
+		if err != nil {
+			return nil, err
+		}
+
+		newRight, err := transformTypeAuto(ctx, t.Right)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return &nodes.TypeSum{
+			Left:  newLeft,
+			Right: newRight,
+		}, nil
+	case *nodes.TypeTuple:
+		newTypes := make([]nodes.StellaType, 0, len(t.Types))
+		for _, t_ := range t.Types {
+			newType, err := transformTypeAuto(ctx, t_)
+
+			if err != nil {
+				return nil, err
+			}
+
+			newTypes = append(newTypes, newType)
+		}
+
+		return &nodes.TypeTuple{Types: newTypes}, nil
+	}
+
+	err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
+	err.AddAdditionalInfo(fmt.Sprintf("Unimplemented check type consistency for %s", type_.String()))
+	return nil, &err
 }

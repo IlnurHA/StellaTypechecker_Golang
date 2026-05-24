@@ -92,7 +92,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		ctx.AddNewScope()
 		defer ctx.RemoveLastScope()
 
-		err := addParametersToContext(ctx, v.Params)
+		_, err := addParametersToContext(ctx, v.Params)
 
 		if err != nil {
 			err.AddIfEmptyExpr(v)
@@ -489,7 +489,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			return nil, err
 		}
 
-		err = checkPatternTypes(v.Cases, inferredType)
+		err = checkPatternTypes(ctx, v.Cases, inferredType)
 		if err != nil {
 			return nil, err
 		}
@@ -731,7 +731,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 			// Pattern handling
 			ctx.AddNewScope()
 
-			err = checkPatternType(v.Pattern, exceptionType)
+			err = checkPatternType(ctx, v.Pattern, exceptionType)
 
 			if err != nil {
 				ctx.RemoveLastScope()
@@ -764,7 +764,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		ctx.AddNewScope()
 		defer ctx.RemoveLastScope()
 
-		err = checkPatternType(v.Pattern, exceptionType)
+		err = checkPatternType(ctx, v.Pattern, exceptionType)
 
 		if err != nil {
 			return nil, err

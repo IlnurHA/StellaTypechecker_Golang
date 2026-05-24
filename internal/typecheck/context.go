@@ -3,6 +3,7 @@ package typecheck
 import (
 	"fmt"
 	nodes "typechecker/internal/ast/nodes"
+	constraintHandler "typechecker/internal/typecheck/constraint"
 	exceptionhandler "typechecker/internal/typecheck/exceptionHandler"
 	scope "typechecker/internal/typecheck/scope"
 
@@ -28,13 +29,14 @@ func (pe ProgramExtension) String() string {
 }
 
 type Context struct {
-	scope         scope.ScopeStack
-	extensions    []ProgramExtension
-	exceptionType exceptionhandler.ExceptionHandler
+	scope             scope.ScopeStack
+	extensions        []ProgramExtension
+	exceptionType     exceptionhandler.ExceptionHandler
+	constraintHandler constraintHandler.ConstraintHandler
 }
 
 func NewContext(extensions []nodes.Extension) *Context {
-	return &Context{scope: scope.NewScopeStack(), extensions: parseExtensions(extensions), exceptionType: nil}
+	return &Context{scope: scope.NewScopeStack(), extensions: parseExtensions(extensions), exceptionType: nil, constraintHandler: constraintHandler.NewConstraintHandler()}
 }
 
 func (ctx *Context) RemoveLastScope() {
@@ -107,6 +109,10 @@ func (ctx *Context) SetExceptionVariant(variant nodes.ExceptionVariantDeclaratio
 
 func (ctx *Context) GetExceptionType() nodes.StellaType {
 	return ctx.exceptionType.GetExceptionType()
+}
+
+func (ctx *Context) GetConstraints() *constraintHandler.ConstraintHandler {
+	return &ctx.constraintHandler
 }
 
 func parseExtensions(exts []nodes.Extension) []ProgramExtension {

@@ -6,7 +6,7 @@ import (
 	nodes "typechecker/internal/ast/nodes"
 )
 
-func checkPatternType(pattern nodes.Pattern, expectedType nodes.StellaType) (err *TypecheckError) {
+func checkPatternType(ctx *Context, pattern nodes.Pattern, expectedType nodes.StellaType) (err *TypecheckError) {
 	defer func() {
 		if err != nil {
 			err.OverwritePattern(pattern)
@@ -18,20 +18,27 @@ func checkPatternType(pattern nodes.Pattern, expectedType nodes.StellaType) (err
 		return nil
 	case *nodes.PatternInl:
 		if v, ok := expectedType.(*nodes.TypeSum); ok {
-			return checkPatternType(p.Pattern, v.Left)
-		} else {
-			err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_PATTERN_FOR_TYPE)
-			err.AddIfEmptyExpectedType(expectedType)
-			return &err
+			return checkPatternType(ctx, p.Pattern, v.Left)
+		} else if ctx.HasExtension(TYPE_RECONSTRUCTION) {
+			if _, ok := expectedType.(*nodes.TypeVar); ok {
+				return nil
+			}
 		}
+		err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_PATTERN_FOR_TYPE)
+		err.AddIfEmptyExpectedType(expectedType)
+		return &err
 	case *nodes.PatternInr:
 		if v, ok := expectedType.(*nodes.TypeSum); ok {
-			return checkPatternType(p.Pattern, v.Right)
-		} else {
-			err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_PATTERN_FOR_TYPE)
-			err.AddIfEmptyExpectedType(expectedType)
-			return &err
+			return checkPatternType(ctx, p.Pattern, v.Right)
+		} else if ctx.HasExtension(TYPE_RECONSTRUCTION) {
+			if _, ok := expectedType.(*nodes.TypeVar); ok {
+				return nil
+			}
 		}
+		err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_PATTERN_FOR_TYPE)
+		err.AddIfEmptyExpectedType(expectedType)
+		return &err
+
 	case *nodes.PatternVariant:
 		if v, ok := expectedType.(*nodes.TypeVariant); ok {
 			for _, variantFieldType := range v.FieldTypes {
@@ -39,7 +46,7 @@ func checkPatternType(pattern nodes.Pattern, expectedType nodes.StellaType) (err
 					if p.Pattern.IsEmpty() && variantFieldType.Type_.IsEmpty() {
 						return nil
 					} else if p.Pattern.IsPresent() && variantFieldType.Type_.IsPresent() {
-						return checkPatternType(p.Pattern.Require(), variantFieldType.Type_.Require())
+						return checkPatternType(ctx, p.Pattern.Require(), variantFieldType.Type_.Require())
 					}
 					// Pattern and type mismatch
 					// Error occured
@@ -64,19 +71,19 @@ func checkPatternType(pattern nodes.Pattern, expectedType nodes.StellaType) (err
 	}
 }
 
-func checkPatternTypes(cases []nodes.MatchCase, expectedType nodes.StellaType) *TypecheckError {
+func checkPatternTypes(ctx *Context, cases []nodes.MatchCase, expectedType nodes.StellaType) *TypecheckError {
 	patterns := make([]nodes.Pattern, len(cases))
 
 	for index, case_ := range cases {
 		patterns[index] = case_.Pattern
 	}
 
-	return checkPatternTypesHelper(patterns, expectedType)
+	return checkPatternTypesHelper(ctx, patterns, expectedType)
 }
 
-func checkPatternTypesHelper(patterns []nodes.Pattern, expectedType nodes.StellaType) *TypecheckError {
+func checkPatternTypesHelper(ctx *Context, patterns []nodes.Pattern, expectedType nodes.StellaType) *TypecheckError {
 	for _, pattern := range patterns {
-		err := checkPatternType(pattern, expectedType)
+		err := checkPatternType(ctx, pattern, expectedType)
 		if err != nil {
 			return err
 		}
@@ -95,10 +102,40 @@ func patternToContext(ctx *Context, pattern nodes.Pattern, expectedType nodes.St
 		if v, ok := expectedType.(*nodes.TypeSum); ok {
 			return patternToContext(ctx, p.Pattern, v.Left)
 		}
+		if ctx.HasExtension(TYPE_RECONSTRUCTION) {
+			if v, ok := expectedType.(*nodes.TypeVar); ok {
+				freshVarLeft := ctx.constraintHandler.GetFreshVar()
+				freshVarRight := ctx.constraintHandler.GetFreshVar()
+
+				ctx.constraintHandler.AddEquationTypes(
+					v, &nodes.TypeSum{
+						Left:  &freshVarLeft,
+						Right: &freshVarRight,
+					},
+				)
+
+				return patternToContext(ctx, p.Pattern, &freshVarLeft)
+			}
+		}
 		return false
 	case *nodes.PatternInr:
 		if v, ok := expectedType.(*nodes.TypeSum); ok {
 			return patternToContext(ctx, p.Pattern, v.Right)
+		}
+		if ctx.HasExtension(TYPE_RECONSTRUCTION) {
+			if v, ok := expectedType.(*nodes.TypeVar); ok {
+				freshVarLeft := ctx.constraintHandler.GetFreshVar()
+				freshVarRight := ctx.constraintHandler.GetFreshVar()
+
+				ctx.constraintHandler.AddEquationTypes(
+					v, &nodes.TypeSum{
+						Left:  &freshVarLeft,
+						Right: &freshVarRight,
+					},
+				)
+
+				return patternToContext(ctx, p.Pattern, &freshVarRight)
+			}
 		}
 		return false
 	case *nodes.PatternVariant:
@@ -121,7 +158,14 @@ func patternToContext(ctx *Context, pattern nodes.Pattern, expectedType nodes.St
 
 func patternBindingsToContext(ctx *Context, patternBindings []nodes.PatternBinding) *TypecheckError {
 	for _, patternBinding := range patternBindings {
-		inferredType, err := infer(ctx, patternBinding.Rhs)
+
+		var inferredType nodes.StellaType
+		var err *TypecheckError
+		if ctx.HasExtension(TYPE_RECONSTRUCTION) {
+			inferredType, err = reconstruct(ctx, patternBinding.Rhs)
+		} else {
+			inferredType, err = infer(ctx, patternBinding.Rhs)
+		}
 
 		if err != nil {
 			return err

@@ -166,7 +166,7 @@ func (t *TypeAuto) String() string {
 }
 
 func (t *TypeVar) String() string {
-	return t.Name.String()
+	return fmt.Sprintf("%s", t.Name.String())
 }
 
 func (t *TypeParens) String() string {

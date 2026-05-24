@@ -3,6 +3,7 @@ package typecheck
 import (
 	"fmt"
 	nodes "typechecker/internal/ast/nodes"
+	"typechecker/internal/typecheck/constraint"
 )
 
 func ParseProgram(node nodes.AProgram) *TypecheckError {
@@ -23,7 +24,7 @@ func ParseProgram(node nodes.AProgram) *TypecheckError {
 	for _, declaration := range node.Declarations {
 		switch decl := declaration.(type) {
 		case *nodes.FunctionDeclaration:
-			declType, err := constructTypeFromDeclaration(&declaration)
+			declType, err := constructTypeFromDeclaration(context, &declaration)
 
 			if err != nil {
 				return err
@@ -71,9 +72,20 @@ func ParseProgram(node nodes.AProgram) *TypecheckError {
 	for _, declaration := range node.Declarations {
 		switch decl := declaration.(type) {
 		case *nodes.FunctionDeclaration:
-			type_, _ := constructTypeFromDeclaration(&declaration)
-			err := CheckType(context, declaration, type_)
+			type_ := context.GetVarType(decl.Name).Require()
 
+			if context.HasExtension(TYPE_RECONSTRUCTION) {
+				inferredType, err := reconstruct(context, declaration)
+				if err != nil {
+					return err
+				}
+				context.constraintHandler.AddEquation(
+					constraint.NewEquation(type_, inferredType, decl),
+				)
+				continue
+			}
+
+			err := CheckType(context, declaration, type_)
 			if err != nil {
 				return err
 			}
@@ -100,6 +112,21 @@ func ParseProgram(node nodes.AProgram) *TypecheckError {
 
 	}
 	context.RemoveLastScope()
+
+	if context.HasExtension(TYPE_RECONSTRUCTION) {
+		err, sub := constraint.Unify(context.GetConstraints())
+
+		if err != nil {
+			err_ := FromConstraintError(err)
+			return &err_
+		}
+
+		err = sub.HasAmbiguousTypes()
+		if err != nil {
+			err_ := FromConstraintError(err)
+			return &err_
+		}
+	}
 
 	return nil
 }
@@ -134,7 +161,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		ctx.AddNewScope()
 		defer ctx.RemoveLastScope()
 
-		err := addParametersToContext(ctx, v.Params)
+		_, err := addParametersToContext(ctx, v.Params)
 		if err != nil {
 			err.AddIfEmptyExpr(v)
 			return err
@@ -149,7 +176,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 
 			switch decl := declaration.(type) {
 			case *nodes.FunctionDeclaration:
-				type_, err := constructTypeFromDeclaration(&declaration)
+				type_, err := constructTypeFromDeclaration(ctx, &declaration)
 
 				if err != nil {
 					return err
@@ -187,7 +214,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 
 		// Check types
 		for _, decl := range v.Declarations {
-			type_, err := constructTypeFromDeclaration(&decl)
+			type_, err := constructTypeFromDeclaration(ctx, &decl)
 
 			if err != nil {
 				return err
@@ -323,7 +350,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		ctx.AddNewScope()
 		defer ctx.RemoveLastScope()
 
-		err := addParametersToContext(ctx, v.Params)
+		_, err := addParametersToContext(ctx, v.Params)
 
 		if err != nil {
 			err.AddIfEmptyExpr(v)
@@ -683,7 +710,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 			return err
 		}
 
-		err = checkPatternTypes(v.Cases, inferredType)
+		err = checkPatternTypes(ctx, v.Cases, inferredType)
 		if err != nil {
 			return err
 		}
@@ -876,7 +903,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		ctx.AddNewScope()
 		defer ctx.RemoveLastScope()
 
-		err = checkPatternType(v.Pattern, exceptionType)
+		err = checkPatternType(ctx, v.Pattern, exceptionType)
 
 		if err != nil {
 			return err

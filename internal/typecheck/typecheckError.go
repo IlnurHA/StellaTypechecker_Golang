@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	nodes "typechecker/internal/ast/nodes"
+	"typechecker/internal/typecheck/constraint"
 
 	"github.com/neocotic/go-optional"
 )
@@ -123,6 +124,42 @@ func (err *TypecheckError) Freeze() {
 	err.freezed = true
 }
 
+func FromConstraintError(error *constraint.ConstraintError) TypecheckError {
+	var TypecheckErrorKind ErrorType
+
+	switch error.ErrorType {
+	case constraint.UNEXPECTED_TYPE:
+		TypecheckErrorKind = ERROR_UNEXPECTED_TYPE_FOR_EXPRESSION
+	case constraint.EXTRA_LABEL:
+		TypecheckErrorKind = ERROR_UNEXPECTED_RECORD
+	case constraint.MISSING_LABEL:
+		TypecheckErrorKind = ERROR_MISSING_RECORD_FIELDS
+	case constraint.INFINITE_TYPE:
+		TypecheckErrorKind = ERROR_OCCURS_CHECK_INFINITE_TYPE
+	case constraint.UNEXPECTED_LENGTH:
+		TypecheckErrorKind = ERROR_UNEXPECTED_TUPLE_LENGTH
+	case constraint.UNEXPECTED_NUMBER_OF_PARAMETERS:
+		TypecheckErrorKind = ERROR_INCORRECT_NUMBER_OF_ARGUMENTS
+	case constraint.AMBIGUOUS_TYPE:
+		TypecheckErrorKind = ERROR_AMBIGUOUS_TYPE
+	}
+
+	err := NewTypeCheckErrorErrorType(TypecheckErrorKind)
+	if error.Lhs != nil {
+		err.AddIfEmptyActualType(error.Lhs)
+	}
+	if error.Rhs != nil {
+		err.AddIfEmptyExpectedType(error.Rhs)
+	}
+	if error.Expr != nil {
+		err.AddIfEmptyExpr(error.Expr)
+	}
+
+	err.AddAdditionalInfo(error.AdditionalInfo)
+
+	return err
+}
+
 const (
 	errorType        = "Type Error: %s\n"
 	errorDescription = "%s\n"
@@ -239,6 +276,9 @@ const (
 	ERROR_ILLEGAL_LOCAL_EXCEPTION_TYPE
 	ERROR_ILLEGAL_LOCAL_OPEN_VARIANT_EXCEPTION
 
+	ERROR_OCCURS_CHECK_INFINITE_TYPE
+	ERROR_AMBIGUOUS_TYPE
+
 	UNIMPLEMENTED
 )
 
@@ -307,6 +347,9 @@ func (s ErrorType) String() string {
 		"ERROR_CONFLICTING_EXCEPTION_DECLARATIONS",
 		"ERROR_ILLEGAL_LOCAL_EXCEPTION_TYPE",
 		"ERROR_ILLEGAL_LOCAL_OPEN_VARIANT_EXCEPTION",
+
+		"ERROR_OCCURS_CHECK_INFINITE_TYPE",
+		"ERROR_AMBIGUOUS_TYPE",
 
 		"NOT_IMPLEMENTED",
 	}[s]
