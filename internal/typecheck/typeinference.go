@@ -3,6 +3,7 @@ package typecheck
 import (
 	"fmt"
 	nodes "typechecker/internal/ast/nodes"
+	universalTypes "typechecker/internal/typecheck/universalTypes"
 
 	"github.com/neocotic/go-optional"
 )
@@ -248,7 +249,7 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		err_.AddAdditionalInfo(fmt.Sprintf("Unexpected label: %s", v.Label.String()))
 		return nil, &err_
 	case *nodes.TypeAsc:
-		err := checkTypeConsistency(v.Type_)
+		err := checkTypeConsistency(ctx, v.Type_)
 
 		if err != nil {
 			return nil, err
@@ -779,6 +780,73 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 		}
 
 		return inferredType, nil
+	case *nodes.TypeAbstraction:
+		fmt.Println("1")
+		if !ctx.HasExtension(UNIVERSAL_TYPES) {
+			err := NewTypeCheckErrorErrorType(NO_NECESSARY_EXTENSION)
+			err.AddAdditionalInfo(
+				fmt.Sprintf("Found type abstraction, which is accessible only with %s extension", UNIVERSAL_TYPES.String()),
+			)
+		}
+
+		ctx.universalTypeHandler.AddNewScope()
+		defer ctx.RemoveLastScope()
+		// Add new generics to context
+		for _, generic := range v.Generics {
+			if !ctx.universalTypeHandler.AddVar(generic, true) {
+				err := NewTypeCheckErrorErrorType(ERROR_DUPLICATE_TYPE_PARAMETER)
+				return nil, &err
+			}
+		}
+		// =====
+
+		inferredType, err := infer(ctx, v.Expr_)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return &nodes.TypeForAll{
+			Types: v.Generics,
+			Type_: inferredType,
+		}, nil
+	case *nodes.TypeApplication:
+		if !ctx.HasExtension(UNIVERSAL_TYPES) {
+			err := NewTypeCheckErrorErrorType(NO_NECESSARY_EXTENSION)
+			err.AddAdditionalInfo(
+				fmt.Sprintf("Found type application, which is accessible only with %s extension", UNIVERSAL_TYPES.String()),
+			)
+		}
+
+		inferredType, err := infer(ctx, v.Function)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if inferredFunType, ok := inferredType.(*nodes.TypeForAll); ok {
+			if len(inferredFunType.Types) != len(v.Types) {
+				err := NewTypeCheckErrorErrorType(ERROR_INCORRECT_NUMBER_OF_TYPE_ARGUMENTS)
+				err.AddIfEmptyExpr(v)
+				err.AddIfEmptyActualType(inferredFunType)
+				err.AddAdditionalInfo(
+					fmt.Sprintf("Expected %d types. Got %d", len(v.Types), len(inferredFunType.Types)),
+				)
+				err.Freeze()
+				return nil, &err
+			}
+			var newType nodes.StellaType = inferredFunType.Type_
+			for index := range v.Types {
+				newType = universalTypes.ChangeTypeVar(&inferredFunType.Types[index], v.Types[index], newType)
+			}
+			return newType, nil
+		}
+
+		err_ := NewTypeCheckErrorErrorType(ERROR_NOT_A_GENERIC_FUNCTION)
+		err_.AddIfEmptyExpr(v)
+		err_.AddIfEmptyActualType(inferredType)
+		err_.Freeze()
+		return nil, &err_
 
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)

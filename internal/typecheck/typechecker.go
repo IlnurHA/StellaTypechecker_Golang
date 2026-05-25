@@ -4,6 +4,7 @@ import (
 	"fmt"
 	nodes "typechecker/internal/ast/nodes"
 	"typechecker/internal/typecheck/constraint"
+	universalTypes "typechecker/internal/typecheck/universalTypes"
 )
 
 func ParseProgram(node nodes.AProgram) *TypecheckError {
@@ -54,6 +55,24 @@ func ParseProgram(node nodes.AProgram) *TypecheckError {
 			continue
 		case *nodes.ExceptionVariantDeclaration:
 			continue
+		case *nodes.GenericFunctionDeclaration:
+			declType, err := constructTypeFromDeclaration(context, &declaration)
+
+			if err != nil {
+				return err
+			}
+
+			name := decl.Name.String()
+			nameStella := nodes.StellaIdent{Name: name, Repr: name}
+
+			success := context.AddVar(nameStella, declType)
+
+			if !success {
+				var typeError = NewTypeCheckErrorErrorType(ERROR_DUPLICATE_FUNCTION_DECLARATION)
+				typeError.AddAdditionalInfo(fmt.Sprintf("Duplicated function name: %s", &nameStella))
+				// typeError.AddIfEmptyExpr(&node)
+				return &typeError
+			}
 		default:
 			err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
 			err.AddIfEmptyExpr(decl)
@@ -85,6 +104,12 @@ func ParseProgram(node nodes.AProgram) *TypecheckError {
 				continue
 			}
 
+			err := CheckType(context, declaration, type_)
+			if err != nil {
+				return err
+			}
+		case *nodes.GenericFunctionDeclaration:
+			type_ := context.GetVarType(decl.Name).Require()
 			err := CheckType(context, declaration, type_)
 			if err != nil {
 				return err
@@ -176,6 +201,140 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 
 			switch decl := declaration.(type) {
 			case *nodes.FunctionDeclaration:
+				type_, err := constructTypeFromDeclaration(ctx, &declaration)
+
+				if err != nil {
+					return err
+				}
+
+				success := ctx.AddVar(decl.Name, type_)
+
+				if !success {
+					err := NewTypeCheckErrorErrorType(ERROR_DUPLICATE_FUNCTION_DECLARATION)
+					err.AddIfEmptyFunctionName(v.Name)
+					// err.AddIfEmptyExpr(decl)
+					return &err
+				}
+			case *nodes.GenericFunctionDeclaration:
+				type_, err := constructTypeFromDeclaration(ctx, &declaration)
+
+				if err != nil {
+					return err
+				}
+
+				success := ctx.AddVar(decl.Name, type_)
+
+				if !success {
+					err := NewTypeCheckErrorErrorType(ERROR_DUPLICATE_FUNCTION_DECLARATION)
+					err.AddIfEmptyFunctionName(v.Name)
+					// err.AddIfEmptyExpr(decl)
+					return &err
+				}
+			case *nodes.ExceptionTypeDeclaration:
+				err := NewTypeCheckErrorErrorType(ERROR_ILLEGAL_LOCAL_EXCEPTION_TYPE)
+				err.AddAdditionalInfo("Exception declarations permitted only in global scope")
+				err.AddIfEmptyFunctionName(v.Name)
+				err.AddIfEmptyExpr(decl)
+				err.Freeze()
+				return &err
+			case *nodes.ExceptionVariantDeclaration:
+				err := NewTypeCheckErrorErrorType(ERROR_ILLEGAL_LOCAL_OPEN_VARIANT_EXCEPTION)
+				err.AddAdditionalInfo("Exception declarations permitted only in global scope")
+				err.AddIfEmptyFunctionName(v.Name)
+				err.AddIfEmptyExpr(decl)
+				err.Freeze()
+				return &err
+			default:
+				err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
+				err.AddIfEmptyExpr(decl)
+				err.AddAdditionalInfo(fmt.Sprintf("Not implemented check type function declaration switch for %s", decl))
+				return &err
+			}
+		}
+
+		// Check types
+		for _, decl := range v.Declarations {
+			type_, err := constructTypeFromDeclaration(ctx, &decl)
+
+			if err != nil {
+				return err
+			}
+
+			err = CheckType(ctx, decl, type_)
+
+			if err != nil {
+				return err
+			}
+		}
+
+		// body scope
+		ctx.AddNewScope()
+
+		err = CheckType(ctx, v.Expr, v.ReturnType.OrElse(&nodes.TypeUnit{}))
+
+		if err != nil {
+			return err
+		}
+
+		return nil
+	case *nodes.GenericFunctionDeclaration:
+		// If successful add function to upper level scope
+		defer func() {
+			if err != nil {
+				err.AddIfEmptyFunctionName(v.Name)
+			}
+		}()
+
+		// function top-level scope
+		ctx.AddNewScope()
+		defer ctx.RemoveLastScope()
+
+		// Add current function for recursion
+		ctx.AddVar(v.Name, expectedType)
+		defer ctx.RemoveLastScope()
+
+		// function type parameter scope
+		ctx.universalTypeHandler.AddNewScope()
+		defer ctx.universalTypeHandler.RemoveLastScope()
+
+		for _, generic := range v.Generics {
+			ctx.universalTypeHandler.AddVar(generic, true)
+		}
+
+		// function parameters scope
+		ctx.AddNewScope()
+		defer ctx.RemoveLastScope()
+
+		_, err := addParametersToContext(ctx, v.Params)
+		if err != nil {
+			err.AddIfEmptyExpr(v)
+			return err
+		}
+
+		// subdeclarations scope
+		ctx.AddNewScope()
+		defer ctx.RemoveLastScope()
+
+		// Collect all names
+		for _, declaration := range v.Declarations {
+
+			switch decl := declaration.(type) {
+			case *nodes.FunctionDeclaration:
+				type_, err := constructTypeFromDeclaration(ctx, &declaration)
+
+				if err != nil {
+					return err
+				}
+
+				success := ctx.AddVar(decl.Name, type_)
+
+				if !success {
+					err := NewTypeCheckErrorErrorType(ERROR_DUPLICATE_FUNCTION_DECLARATION)
+					err.AddIfEmptyFunctionName(v.Name)
+					// err.AddIfEmptyExpr(decl)
+					return &err
+				}
+			case *nodes.GenericFunctionDeclaration:
 				type_, err := constructTypeFromDeclaration(ctx, &declaration)
 
 				if err != nil {
@@ -568,7 +727,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		err_.Freeze()
 		return &err_
 	case *nodes.TypeAsc:
-		if err := checkTypeConsistency(v.Type_); err != nil {
+		if err := checkTypeConsistency(ctx, v.Type_); err != nil {
 			return err
 		}
 		if err := CheckStellaType(ctx, v.Type_, expectedType); err != nil {
@@ -912,6 +1071,96 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		patternToContext(ctx, v.Pattern, exceptionType)
 
 		return CheckType(ctx, v.FallbackExpr, expectedType)
+	case *nodes.TypeAbstraction:
+		if !ctx.HasExtension(UNIVERSAL_TYPES) {
+			err := NewTypeCheckErrorErrorType(NO_NECESSARY_EXTENSION)
+			err.AddAdditionalInfo(
+				fmt.Sprintf("Found type abstraction, which is accessible only with %s extension", UNIVERSAL_TYPES.String()),
+			)
+		}
+
+		if typeForAll, ok := expectedType.(*nodes.TypeForAll); ok {
+			if len(typeForAll.Types) != len(v.Generics) {
+				err := NewTypeCheckErrorErrorType(ERROR_INCORRECT_NUMBER_OF_TYPE_ARGUMENTS)
+				err.AddIfEmptyExpectedType(typeForAll)
+				err.AddIfEmptyExpr(v)
+				err.AddAdditionalInfo(
+					fmt.Sprintf("Expected %d parameters. Got %d", len(typeForAll.Types), len(v.Generics)),
+				)
+				err.Freeze()
+				return &err
+			}
+
+			ctx.universalTypeHandler.AddNewScope()
+			defer ctx.RemoveLastScope()
+			// Add new generics to context
+			for _, generic := range v.Generics {
+				if !ctx.universalTypeHandler.AddVar(generic, true) {
+					err := NewTypeCheckErrorErrorType(ERROR_DUPLICATE_TYPE_PARAMETER)
+					return &err
+				}
+			}
+			// =====
+
+			newType := typeForAll.Type_
+			for index := range typeForAll.Types {
+				typeVar := nodes.TypeVar{
+					Name:      v.Generics[index],
+					Generated: false,
+				}
+				newType = universalTypes.ChangeTypeVar(&typeForAll.Types[index], &typeVar, newType)
+			}
+
+			return CheckType(ctx, v.Expr_, newType)
+		}
+		err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_TYPE_FOR_EXPRESSION)
+		err.AddIfEmptyExpectedType(expectedType)
+		err.AddIfEmptyExpr(v)
+		return &err
+	case *nodes.TypeApplication:
+		if !ctx.HasExtension(UNIVERSAL_TYPES) {
+			err := NewTypeCheckErrorErrorType(NO_NECESSARY_EXTENSION)
+			err.AddAdditionalInfo(
+				fmt.Sprintf("Found type application, which is accessible only with %s extension", UNIVERSAL_TYPES.String()),
+			)
+		}
+
+		inferredType, err := infer(ctx, v.Function)
+
+		if err != nil {
+			return err
+		}
+
+		if inferredFunType, ok := inferredType.(*nodes.TypeForAll); ok {
+			if len(inferredFunType.Types) != len(v.Types) {
+				err := NewTypeCheckErrorErrorType(ERROR_INCORRECT_NUMBER_OF_TYPE_ARGUMENTS)
+				err.AddIfEmptyExpr(v)
+				err.AddIfEmptyExpectedType(expectedType)
+				err.AddAdditionalInfo(
+					fmt.Sprintf("Expected %d types. Got %d", len(v.Types), len(inferredFunType.Types)),
+				)
+				err.Freeze()
+				return &err
+			}
+			var newType nodes.StellaType = inferredFunType
+			for index := range v.Types {
+				newType = universalTypes.ChangeTypeVar(&inferredFunType.Types[index], v.Types[index], newType)
+			}
+
+			err := checkStellaType(newType, expectedType)
+
+			if err != nil {
+				return err
+			}
+
+			return CheckType(ctx, v.Function, expectedType)
+		}
+
+		err_ := NewTypeCheckErrorErrorType(ERROR_NOT_A_GENERIC_FUNCTION)
+		err_.AddIfEmptyExpr(v)
+		err_.AddIfEmptyActualType(inferredType)
+		err_.Freeze()
+		return &err_
 
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)

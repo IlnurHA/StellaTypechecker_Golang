@@ -62,8 +62,9 @@ type TypeTop struct{}
 type TypeBot struct{}
 type TypeAuto struct{}
 type TypeVar struct {
-	Name      StellaIdent
-	Generated bool
+	Name          StellaIdent
+	GeneratedName StellaIdent
+	Generated     bool
 }
 type TypeParens struct {
 	Type_ StellaType

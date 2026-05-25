@@ -6,6 +6,7 @@ import (
 	constraintHandler "typechecker/internal/typecheck/constraint"
 	exceptionhandler "typechecker/internal/typecheck/exceptionHandler"
 	scope "typechecker/internal/typecheck/scope"
+	universalTypes "typechecker/internal/typecheck/universalTypes"
 
 	"github.com/neocotic/go-optional"
 )
@@ -29,14 +30,21 @@ func (pe ProgramExtension) String() string {
 }
 
 type Context struct {
-	scope             scope.ScopeStack
-	extensions        []ProgramExtension
-	exceptionType     exceptionhandler.ExceptionHandler
-	constraintHandler constraintHandler.ConstraintHandler
+	scope                scope.ScopeStack
+	extensions           []ProgramExtension
+	exceptionType        exceptionhandler.ExceptionHandler
+	constraintHandler    constraintHandler.ConstraintHandler
+	universalTypeHandler universalTypes.UniversalTypeHandler
 }
 
 func NewContext(extensions []nodes.Extension) *Context {
-	return &Context{scope: scope.NewScopeStack(), extensions: parseExtensions(extensions), exceptionType: nil, constraintHandler: constraintHandler.NewConstraintHandler()}
+	return &Context{
+		scope:                scope.NewScopeStack(),
+		extensions:           parseExtensions(extensions),
+		exceptionType:        nil,
+		constraintHandler:    constraintHandler.NewConstraintHandler(),
+		universalTypeHandler: universalTypes.NewUniversalTypeHandler(),
+	}
 }
 
 func (ctx *Context) RemoveLastScope() {

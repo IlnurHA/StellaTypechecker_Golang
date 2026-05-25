@@ -22,7 +22,7 @@ func addParametersToContext(ctx *Context, paramDecls []nodes.ParameterDeclaratio
 			}
 		}
 
-		err := checkTypeConsistency(type_)
+		err := checkTypeConsistency(ctx, type_)
 
 		if err != nil {
 			return nil, err
@@ -68,7 +68,7 @@ func constructTypeFromDeclaration(ctx *Context, declaration *nodes.Declaration) 
 				}
 			}
 
-			err := checkTypeConsistency(type_)
+			err := checkTypeConsistency(ctx, type_)
 
 			if err != nil {
 				return nil, err
@@ -77,13 +77,45 @@ func constructTypeFromDeclaration(ctx *Context, declaration *nodes.Declaration) 
 			paramTypes[index] = type_
 		}
 
-		err := checkTypeConsistency(returnType)
+		err := checkTypeConsistency(ctx, returnType)
 
 		if err != nil {
 			return nil, err
 		}
 
 		return &nodes.TypeFun{ParamTypes: paramTypes, ReturnType: returnType}, nil
+	case *nodes.GenericFunctionDeclaration:
+		paramTypes := make([]nodes.StellaType, len(v.Params))
+		returnType := v.ReturnType.OrElse(&nodes.TypeUnit{})
+
+		ctx.universalTypeHandler.AddNewScope()
+		defer ctx.universalTypeHandler.RemoveLastScope()
+
+		for _, generic := range v.Generics {
+			ctx.universalTypeHandler.AddVar(generic, true)
+		}
+
+		for index, param := range v.Params {
+			type_ := param.ParameterType
+
+			err := checkTypeConsistency(ctx, type_)
+
+			if err != nil {
+				return nil, err
+			}
+
+			paramTypes[index] = type_
+		}
+
+		err := checkTypeConsistency(ctx, returnType)
+
+		if err != nil {
+			return nil, err
+		}
+
+		typeFun := nodes.TypeFun{ParamTypes: paramTypes, ReturnType: returnType}
+
+		return &nodes.TypeForAll{Types: v.Generics, Type_: &typeFun}, nil
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
 		err.AddIfEmptyExpr(*declaration)
@@ -118,37 +150,37 @@ func showList[T fmt.Stringer](elems []T) string {
 	return builder.String()
 }
 
-func checkTypeConsistency(type_ nodes.StellaType) *TypecheckError {
+func checkTypeConsistency(ctx *Context, type_ nodes.StellaType) *TypecheckError {
 	switch t := type_.(type) {
 	case *nodes.TypeBool, *nodes.TypeNat, *nodes.TypeUnit, *nodes.TypeBot, *nodes.TypeTop:
 		return nil
 	case *nodes.TypeFun:
 		for _, param := range t.ParamTypes {
-			err := checkTypeConsistency(param)
+			err := checkTypeConsistency(ctx, param)
 
 			if err != nil {
 				return err
 			}
 		}
 
-		return checkTypeConsistency(t.ReturnType)
+		return checkTypeConsistency(ctx, t.ReturnType)
 	case *nodes.TypeList:
-		return checkTypeConsistency(t.Type_)
+		return checkTypeConsistency(ctx, t.Type_)
 	case *nodes.TypeParens:
-		return checkTypeConsistency(t.Type_)
+		return checkTypeConsistency(ctx, t.Type_)
 	case *nodes.TypeRef:
-		return checkTypeConsistency(t.Type_)
+		return checkTypeConsistency(ctx, t.Type_)
 	case *nodes.TypeSum:
-		err := checkTypeConsistency(t.Left)
+		err := checkTypeConsistency(ctx, t.Left)
 
 		if err != nil {
 			return err
 		}
 
-		return checkTypeConsistency(t.Right)
+		return checkTypeConsistency(ctx, t.Right)
 	case *nodes.TypeTuple:
 		for _, type_ := range t.Types {
-			err := checkTypeConsistency(type_)
+			err := checkTypeConsistency(ctx, type_)
 
 			if err != nil {
 				return err
@@ -181,7 +213,20 @@ func checkTypeConsistency(type_ nodes.StellaType) *TypecheckError {
 		}
 		return nil
 	case *nodes.TypeVar:
+		if ctx.HasExtension(UNIVERSAL_TYPES) {
+			value := ctx.universalTypeHandler.GetEnrty(t.Name)
+
+			if value.IsEmpty() {
+				err := NewTypeCheckErrorErrorType(ERROR_UNDEFINED_TYPE_VARIABLE)
+				err.AddAdditionalInfo(
+					fmt.Sprintf("Undefined type variable '%s'", t.Name.String()),
+				)
+				return &err
+			}
+		}
 		return nil
+	case *nodes.TypeForAll:
+		return checkTypeConsistency(ctx, t.Type_)
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
 		err.AddAdditionalInfo(fmt.Sprintf("Unimplemented check type consistency for %s", type_.String()))

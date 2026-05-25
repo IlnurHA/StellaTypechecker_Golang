@@ -3,6 +3,7 @@ package typecheck
 import (
 	"fmt"
 	nodes "typechecker/internal/ast/nodes"
+	universaltypes "typechecker/internal/typecheck/universalTypes"
 )
 
 func CheckStellaType(ctx *Context, actual nodes.StellaType, expected nodes.StellaType) (err *TypecheckError) {
@@ -249,6 +250,37 @@ func checkStellaType(actual nodes.StellaType, expected nodes.StellaType) (err *T
 		}
 
 		return nil
+	case *nodes.TypeForAll:
+		if rt, ok := expected.(*nodes.TypeForAll); ok {
+			if len(lt.Types) != len(rt.Types) {
+				err := NewTypeCheckErrorErrorType(ERROR_INCORRECT_NUMBER_OF_TYPE_ARGUMENTS)
+				return &err
+			}
+
+			var newType nodes.StellaType = lt.Type_
+			for index := range lt.Types {
+				rtTypeVar := nodes.TypeVar{
+					Name:          rt.Types[index],
+					GeneratedName: rt.Types[index],
+					Generated:     false,
+				}
+				newType = universaltypes.ChangeTypeVar(&lt.Types[index], &rtTypeVar, newType)
+			}
+
+			return checkStellaType(newType, rt.Type_)
+		}
+		err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_TYPE_FOR_EXPRESSION)
+		return &err
+	case *nodes.TypeVar:
+		if rt, ok := expected.(*nodes.TypeVar); ok {
+			if rt.Name == lt.Name {
+				return nil
+			}
+			err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_TYPE_FOR_EXPRESSION)
+			return &err
+		}
+		err := NewTypeCheckErrorErrorType(ERROR_UNEXPECTED_TYPE_FOR_EXPRESSION)
+		return &err
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
 		err.AddAdditionalInfo(fmt.Sprintf("Not implemented checkStellaType for %s", actual))

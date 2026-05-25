@@ -374,7 +374,7 @@ func reconstruct(ctx *Context, node nodes.Node) (type_ nodes.StellaType, err *Ty
 		err_.AddAdditionalInfo(fmt.Sprintf("Unexpected label: %s", v.Label.String()))
 		return nil, &err_
 	case *nodes.TypeAsc:
-		err := checkTypeConsistency(v.Type_)
+		err := checkTypeConsistency(ctx, v.Type_)
 
 		if err != nil {
 			return nil, err
