@@ -131,7 +131,7 @@ func FromConstraintError(error *constraint.ConstraintError) TypecheckError {
 	case constraint.UNEXPECTED_TYPE:
 		TypecheckErrorKind = ERROR_UNEXPECTED_TYPE_FOR_EXPRESSION
 	case constraint.EXTRA_LABEL:
-		TypecheckErrorKind = ERROR_UNEXPECTED_RECORD
+		TypecheckErrorKind = ERROR_UNEXPECTED_RECORD_FIELDS
 	case constraint.MISSING_LABEL:
 		TypecheckErrorKind = ERROR_MISSING_RECORD_FIELDS
 	case constraint.INFINITE_TYPE:

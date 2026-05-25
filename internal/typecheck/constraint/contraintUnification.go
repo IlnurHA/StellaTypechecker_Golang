@@ -171,7 +171,7 @@ func unify(constraints *ConstraintHandler, substitution *Substitution) *Constrai
 func unifyFun(constraints *ConstraintHandler, lhs *nodes.TypeFun, rhs *nodes.TypeFun, expr nodes.Node) *ConstraintError {
 	if len(lhs.ParamTypes) != len(rhs.ParamTypes) {
 		return &ConstraintError{
-			ErrorType: UNEXPECTED_TYPE,
+			ErrorType: UNEXPECTED_NUMBER_OF_PARAMETERS,
 			Lhs:       lhs,
 			Rhs:       rhs,
 			Expr:      expr,
@@ -193,8 +193,16 @@ func unifyFun(constraints *ConstraintHandler, lhs *nodes.TypeFun, rhs *nodes.Typ
 
 func unifyRecord(constraints *ConstraintHandler, lhs *nodes.TypeRecord, rhs *nodes.TypeRecord, expr nodes.Node) *ConstraintError {
 	if len(lhs.FieldTypes) != len(rhs.FieldTypes) {
+		var errorType ConstraintErrorType
+
+		if len(lhs.FieldTypes) > len(rhs.FieldTypes) {
+			errorType = EXTRA_LABEL
+		} else {
+			errorType = MISSING_LABEL
+		}
+
 		return &ConstraintError{
-			ErrorType: UNEXPECTED_TYPE,
+			ErrorType: errorType,
 			Lhs:       lhs,
 			Rhs:       rhs,
 			Expr:      expr,
@@ -216,7 +224,7 @@ func unifyRecord(constraints *ConstraintHandler, lhs *nodes.TypeRecord, rhs *nod
 
 		if !found {
 			return &ConstraintError{
-				ErrorType: UNEXPECTED_TYPE,
+				ErrorType: EXTRA_LABEL,
 				Lhs:       lhs,
 				Rhs:       rhs,
 				Expr:      expr,
@@ -230,7 +238,7 @@ func unifyRecord(constraints *ConstraintHandler, lhs *nodes.TypeRecord, rhs *nod
 func unifyTuple(constraints *ConstraintHandler, lhs *nodes.TypeTuple, rhs *nodes.TypeTuple, expr nodes.Node) *ConstraintError {
 	if len(lhs.Types) != len(rhs.Types) {
 		return &ConstraintError{
-			ErrorType: UNEXPECTED_TYPE,
+			ErrorType: UNEXPECTED_LENGTH,
 			Lhs:       lhs,
 			Rhs:       rhs,
 			Expr:      expr,
