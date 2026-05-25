@@ -298,7 +298,11 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 		defer ctx.universalTypeHandler.RemoveLastScope()
 
 		for _, generic := range v.Generics {
-			ctx.universalTypeHandler.AddVar(generic, true)
+			if !ctx.universalTypeHandler.AddVar(generic, true) {
+				err := NewTypeCheckErrorErrorType(ERROR_DUPLICATE_TYPE_PARAMETER)
+				err.AddIfEmptyExpr(v)
+				return &err
+			}
 		}
 
 		// function parameters scope
