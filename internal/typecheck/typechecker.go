@@ -1102,14 +1102,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 			}
 			// =====
 
-			newType := typeForAll.Type_
-			for index := range typeForAll.Types {
-				typeVar := nodes.TypeVar{
-					Name:      v.Generics[index],
-					Generated: false,
-				}
-				newType = universalTypes.ChangeTypeVar(&typeForAll.Types[index], &typeVar, newType)
-			}
+			newType := universalTypes.ChangeTypeVars(typeForAll.Types, universalTypes.ToTypeVars(v.Generics), typeForAll.Type_)
 
 			return CheckType(ctx, v.Expr_, newType)
 		}
@@ -1142,10 +1135,7 @@ func CheckType(ctx *Context, node nodes.Node, expectedType nodes.StellaType) (er
 				err.Freeze()
 				return &err
 			}
-			var newType nodes.StellaType = inferredFunType
-			for index := range v.Types {
-				newType = universalTypes.ChangeTypeVar(&inferredFunType.Types[index], v.Types[index], newType)
-			}
+			newType := universalTypes.ChangeTypeVars(inferredFunType.Types, v.Types, inferredFunType)
 
 			err := checkStellaType(newType, expectedType)
 

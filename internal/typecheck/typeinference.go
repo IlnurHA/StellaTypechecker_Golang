@@ -781,7 +781,6 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 
 		return inferredType, nil
 	case *nodes.TypeAbstraction:
-		fmt.Println("1")
 		if !ctx.HasExtension(UNIVERSAL_TYPES) {
 			err := NewTypeCheckErrorErrorType(NO_NECESSARY_EXTENSION)
 			err.AddAdditionalInfo(
@@ -835,11 +834,13 @@ func infer(ctx *Context, node nodes.Node) (nodes.StellaType, *TypecheckError) {
 				err.Freeze()
 				return nil, &err
 			}
-			var newType nodes.StellaType = inferredFunType.Type_
-			for index := range v.Types {
-				newType = universalTypes.ChangeTypeVar(&inferredFunType.Types[index], v.Types[index], newType)
-			}
+			// var newType nodes.StellaType = inferredFunType.Type_
+			// for index := range v.Types {
+			// 	newType = universalTypes.ChangeTypeVar(&inferredFunType.Types[index], v.Types[index], newType)
+			// }
+			newType := universalTypes.ChangeTypeVars(inferredFunType.Types, v.Types, inferredFunType.Type_)
 			return newType, nil
+
 		}
 
 		err_ := NewTypeCheckErrorErrorType(ERROR_NOT_A_GENERIC_FUNCTION)

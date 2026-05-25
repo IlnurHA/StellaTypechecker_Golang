@@ -99,6 +99,146 @@ func ChangeTypeVar(from *nodes.StellaIdent, to nodes.StellaType, type_ nodes.Ste
 	}
 }
 
+func ToTypeVars(idents []nodes.StellaIdent) []nodes.StellaType {
+	typeVars := make([]nodes.StellaType, 0, len(idents))
+
+	for _, ident := range idents {
+		typeVar := nodes.TypeVar{
+			Name:          ident,
+			GeneratedName: ident,
+			Generated:     false,
+		}
+		typeVars = append(typeVars, &typeVar)
+	}
+
+	return typeVars
+}
+
+func ChangeTypeVars(from []nodes.StellaIdent, to []nodes.StellaType, type_ nodes.StellaType) nodes.StellaType {
+	switch t := type_.(type) {
+	case *nodes.TypeVar:
+		if t.Generated {
+			return t
+		}
+
+		for index := range from {
+			if t.Name.Equal(&from[index]) {
+				return to[index]
+			}
+		}
+		return t
+	case *nodes.TypeBool, *nodes.TypeNat, *nodes.TypeUnit, *nodes.TypeBot, *nodes.TypeTop:
+		return t
+	case *nodes.TypeFun:
+		newParams := make([]nodes.StellaType, 0, len(t.ParamTypes))
+		for _, param := range t.ParamTypes {
+			newParams = append(newParams, ChangeTypeVars(from, to, param))
+		}
+
+		return &nodes.TypeFun{ParamTypes: newParams, ReturnType: ChangeTypeVars(from, to, t.ReturnType)}
+	case *nodes.TypeList:
+		return &nodes.TypeList{Type_: ChangeTypeVars(from, to, t.Type_)}
+	case *nodes.TypeParens:
+		return &nodes.TypeParens{Type_: ChangeTypeVars(from, to, t.Type_)}
+	case *nodes.TypeRef:
+		return &nodes.TypeRef{Type_: ChangeTypeVars(from, to, t.Type_)}
+	case *nodes.TypeSum:
+		return &nodes.TypeSum{
+			Left:  ChangeTypeVars(from, to, t.Left),
+			Right: ChangeTypeVars(from, to, t.Right),
+		}
+	case *nodes.TypeTuple:
+		newTypes := make([]nodes.StellaType, 0, len(t.Types))
+
+		for _, type_ := range t.Types {
+			newTypes = append(newTypes, ChangeTypeVars(from, to, type_))
+		}
+
+		return &nodes.TypeTuple{Types: newTypes}
+	case *nodes.TypeRecord:
+		newFieldTypes := make([]nodes.RecordFieldType, 0, len(t.FieldTypes))
+		for _, recordFieldType := range t.FieldTypes {
+			newFieldTypes = append(newFieldTypes,
+				nodes.RecordFieldType{
+					Label: recordFieldType.Label,
+					Type_: ChangeTypeVars(from, to, recordFieldType.Type_),
+				},
+			)
+		}
+		return &nodes.TypeRecord{FieldTypes: newFieldTypes}
+	case *nodes.TypeVariant:
+		newFieldTypes := make([]nodes.VariantFieldType, 0, len(t.FieldTypes))
+		for _, variantFieldType := range t.FieldTypes {
+			newType := optional.Empty[nodes.StellaType]()
+			if variantFieldType.Type_.IsPresent() {
+				newType = optional.Of(ChangeTypeVars(from, to, variantFieldType.Type_.Require()))
+			}
+			newFieldTypes = append(newFieldTypes,
+				nodes.VariantFieldType{
+					Label: variantFieldType.Label,
+					Type_: newType,
+				},
+			)
+		}
+		return &nodes.TypeVariant{FieldTypes: newFieldTypes}
+	case *nodes.TypeForAll:
+		// Check if we cannot further overwrite 'from' typevar
+		newFrom := make([]nodes.StellaIdent, 0)
+		for _, ident := range from {
+			found := false
+			for _, generic := range t.Types {
+				if generic.Equal(&ident) {
+					found = true
+				}
+			}
+
+			if !found {
+				newFrom = append(newFrom, ident)
+			}
+		}
+		if len(newFrom) == 0 {
+			return t
+		}
+
+		// Check if we need to perform alpha conversion first
+		allFreeVariables := make([]nodes.StellaIdent, 0)
+		for _, expr := range to {
+			allFreeVariables = append(allFreeVariables, freeVariables(expr)...)
+		}
+
+		genericsToChange := make([]nodes.StellaIdent, 0)
+		genericsValue := make([]nodes.StellaIdent, 0)
+		newTypes := make([]nodes.StellaIdent, 0)
+		for _, generic := range t.Types {
+			found := false
+			for _, freevar := range allFreeVariables {
+				if generic.Equal(&freevar) {
+					found = true
+				}
+			}
+			if found {
+				newName := nodes.StellaIdent{Name: generic.Repr + "_"}
+				genericsToChange = append(genericsToChange, generic)
+				genericsValue = append(genericsValue, newName)
+				newTypes = append(newTypes, newName)
+			} else {
+				newTypes = append(newTypes, generic)
+			}
+		}
+		var stellaVars []nodes.StellaType = ToTypeVars(genericsValue)
+		subt := ChangeTypeVars(genericsToChange, stellaVars, t.Type_)
+
+		t = &nodes.TypeForAll{Types: newTypes, Type_: subt}
+
+		return &nodes.TypeForAll{
+			Types: t.Types,
+			Type_: ChangeTypeVars(from, to, t.Type_),
+		}
+	default:
+		panic(fmt.Sprintf("Unimplemented changing type vars for %s\n", type_.String()))
+	}
+}
+
 func freeVariables(type_ nodes.StellaType) []nodes.StellaIdent {
 	switch t := type_.(type) {
 	case *nodes.TypeVar:

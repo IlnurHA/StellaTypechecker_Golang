@@ -257,15 +257,7 @@ func checkStellaType(actual nodes.StellaType, expected nodes.StellaType) (err *T
 				return &err
 			}
 
-			var newType nodes.StellaType = lt.Type_
-			for index := range lt.Types {
-				rtTypeVar := nodes.TypeVar{
-					Name:          rt.Types[index],
-					GeneratedName: rt.Types[index],
-					Generated:     false,
-				}
-				newType = universaltypes.ChangeTypeVar(&lt.Types[index], &rtTypeVar, newType)
-			}
+			newType := universaltypes.ChangeTypeVars(lt.Types, universaltypes.ToTypeVars(rt.Types), lt.Type_)
 
 			return checkStellaType(newType, rt.Type_)
 		}

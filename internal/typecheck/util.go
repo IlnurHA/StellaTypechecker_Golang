@@ -226,6 +226,14 @@ func checkTypeConsistency(ctx *Context, type_ nodes.StellaType) *TypecheckError 
 		}
 		return nil
 	case *nodes.TypeForAll:
+		if ctx.HasExtension(UNIVERSAL_TYPES) {
+			ctx.universalTypeHandler.AddNewScope()
+			defer ctx.universalTypeHandler.RemoveLastScope()
+
+			for _, generic := range t.Types {
+				ctx.universalTypeHandler.AddVar(generic, true)
+			}
+		}
 		return checkTypeConsistency(ctx, t.Type_)
 	default:
 		err := NewTypeCheckErrorErrorType(UNIMPLEMENTED)
